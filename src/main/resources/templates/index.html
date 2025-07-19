@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8">
+<title>首頁 Home</title>
+</head>
+<body>
+<div th:replace="~{layout/navbar}"></div>
+
+
+<div class="container">
+
+
+<h1>首頁 ok666 😊😊✔✔</h1>
+
+
+<div th:if="${session.loginUsername}">安安你好: <span th:text="${session.loginUsername}"></span></div>
+
+
+<ul>
+ <li><a th:href="@{/employee/add}">新增員工</a></li>
+ <li><a th:href="@{/employee/all}">列出員工</a></li>
+</ul>
+
+
+</div>
+
+
+</body>
+</html>

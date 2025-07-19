@@ -1,0 +1,12 @@
+package com.example.springbootdemo.model;
+
+import java.util.UUID;
+
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+
+public interface UsersDetailRepository extends JpaRepository<UsersDetail, UUID> {
+
+
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8">
+<title>新增員工</title>
+</head>
+<body>
+<div th:replace="~{layout/navbar}"></div>
+<div class="container">
+<h1>新增員工</h1>
+
+
+<form th:action="@{/employee/addPost}" method="post">
+  姓名 : <input name="n" placeholder="請輸入姓名" required />
+ <br>
+ Email : <input name="email" placeholder="請輸入 Email" required />
+ <br>
+ 年資 : <input name="jobAge" placeholder="請輸入年資" type="number" min="0" max="60" required />
+ <br>
+  <input type="submit" value="送出" />
+  
+  <p th:text="${okMsg}"></p>
+  <p>[[ ${okMsg} ]]</p>
+</form>
+</div>
+</body>
+</html>

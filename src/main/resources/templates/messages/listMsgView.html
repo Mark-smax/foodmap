@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8">
+<title>查看訊息</title>
+</head>
+<body>
+<div th:replace="~{layout/navbar}"></div>
+
+
+<div class="container">
+
+
+<h1>查看訊息</h1>
+
+
+<div th:if="${deleteOK}">刪除OK</div>
+
+
+<div th:if="${page.content.size() == 0}">目前沒有資料</div>
+
+
+<div th:if="${page.content.size() != 0}" class="showdata">
+
+
+<th:block th:each=" oneMsg : ${page.content} ">
+	<div  class="card">
+	  <div class="card-header">
+	     最新訊息，時間 : <span th:text="${{ oneMsg.createdAt }}"></span>
+	     <br>
+	     
+	  </div>
+	  <div class="card-body">
+	    <p th:text="${oneMsg.text}"></p>
+	    
+	     <div th:if="${oneMsg.users} ? ${oneMsg.users.id == session.loginUserId}" class="edit_place">
+	       <a th:href="@{/msg/edit(id=${oneMsg.id})}" class="btn btn-outline-success">編輯</a>
+	       <a th:href="@{/msg/delete(id=${oneMsg.id})}" class="btn btn-outline-danger">刪除</a>
+	     </div>
+	  </div> 
+	</div>
+	<br>
+</th:block>
+
+
+
+
+
+
+<ul class="pagination">
+ 
+<!--      上一頁 -->
+    <li th:if="${ page.number + 1 != 1}" class="page-item">
+        <a class="page-link" th:href="@{/msg/list(p=${ page.number })}"> 上一頁</a>
+    </li>
+    
+    <li th:if="${ page.number + 1 == 1}" class="page-item disabled">
+        <a class="page-link" th:href="@{/msg/list(p=${ page.number })}"> 上一頁</a>
+    </li>
+
+
+<!--    頁碼 -->
+	<th:block th:each="  pageNum : ${#numbers.sequence(1, page.totalPages)}">
+	   <li th:if="${page.number + 1 != pageNum}" class="page-item">
+	     <a class="page-link" th:href="@{/msg/list(p=${pageNum})}" th:text="${pageNum}"></a>
+	   </li>  
+	   <li th:if="${page.number + 1 == pageNum}" class="page-item active">
+	     <a class="page-link" th:href="@{/msg/list(p=${pageNum})}" th:text="${pageNum}"></a>
+	   </li>    
+	</th:block>
+	
+	
+	<!-- 下一頁 -->
+	<li th:if="${ page.number + 1 != page.totalPages }" class="page-item">
+        <a class="page-link" th:href="@{/msg/list(p=${ page.number + 2 })}"> 下一頁</a>
+    </li>
+    
+    <li th:if="${ page.number + 1 == page.totalPages }" class="page-item disabled">
+        <a class="page-link" th:href="@{/msg/list(p=${ page.number + 2 })}">最後了</a>
+    </li>
+	
+</ul>
+</div>
+
+
+</div>
+
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8">
+<title>購物車</title>
+</head>
+<body>
+<div th:replace="~{layout/navbar}"></div>
+
+
+<div class="container">
+
+
+<h3 th:if="${addOk}" th:text="${addOk}"></h3>
+<h3 th:if="${minusOk}" th:text="${minusOk}"></h3>
+
+
+
+
+	<h1>購物車</h1>
+	<h3 th:if="${emptyMsg}" th:text="${emptyMsg}"></h3>
+	
+	<table th:if="! ${emptyMsg}">
+	  <thead>
+	    <tr>
+		    <th>商品圖片</th>
+		    <th>圖片名稱</th>
+		    <th>-</th>
+		    <th>數量</th>
+		    <th>+</th>
+	     <tr>
+	  </thead>
+	  <tbody>
+	  <th:block th:each=" oneCart : ${cartList}">
+	    <tr>
+	      <td><img width="250px" th:src="@{/photos/download(id=${oneCart.goodphoto.id})}" /> </td>
+	      <td th:text="${oneCart.goodphoto.photoName}"></td>
+	      <td><a th:href="@{/cart/minus(goodphotoId=${oneCart.goodphoto.id})}">-</a></td>
+	      <td th:text="${oneCart.vol}"></td>
+	      <td><a th:href="@{/cart/add2(goodphotoId=${oneCart.goodphoto.id})}">+</a></td>
+	    </tr>    
+	   </th:block> 
+	  </tbody>
+
+
+	</table>
+	
+	
+
+
+</div>
+
+
+
+
+
+
+</body>
+</html>
