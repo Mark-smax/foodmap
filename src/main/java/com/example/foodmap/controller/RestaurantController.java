@@ -19,10 +19,11 @@ public class RestaurantController {
         this.service = service;
     }
 
-    // GET 多條件查詢 + 分頁
+    // GET 多條件查詢 + 分頁（新增 keyword）
     @GetMapping
     public Page<Restaurant> search(
             @RequestParam(required = false) String county,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "rating") String sortBy,
@@ -33,6 +34,19 @@ public class RestaurantController {
         Sort.Direction direction = order.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
+        // 1. keyword 優先做模糊搜尋
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return service.searchByKeyword(keyword.trim(), pageRequest);
+        }
+
+        // 2. 若無 keyword，判斷是否只有 county + type，且 minRating == 0，呼叫不帶 rating 篩選的新方法
+        if (county != null && !county.trim().isEmpty() &&
+            type != null && !type.trim().isEmpty() &&
+            (minRating == null || minRating == 0)) {
+            return service.searchByCountyAndType(county.trim(), type.trim(), pageRequest);
+        }
+
+        // 3. 其他情況，呼叫原本有 rating 篩選的多條件查詢
         return service.searchRestaurants(county, minRating, type, pageRequest);
     }
 
