@@ -1,0 +1,97 @@
+@charset "UTF-8";
+
+
+body {
+	font-family: sans-serif;
+	padding: 20px;
+}
+
+.map-region {
+	cursor: pointer; /* 滑鼠移到地圖區域時，顯示為可點擊的手指形狀 */
+	transition: fill 0.9s; /* 填色變化時，有 0.9 秒的平滑動畫 */
+	fill: #ccc; /* 預設填色為淺灰色 */
+}
+
+.map-region:hover {
+	fill: #ffa726; /* 滑鼠移到地圖區域時，填色變成橘黃色 */
+}
+
+.map-region.active {
+	fill: orange; /* 或其他你希望的顏色 */
+	stroke: #333;
+	stroke-width: 2;
+}
+
+#card-container {
+	display: flex; /* 使用 flexbox 排列子元素（.card） */
+	flex-wrap: wrap; /* 超過一行就自動換行排列 */
+	margin-top: 20px; /* 上方留白 20px */
+}
+
+.card {
+	border: 1px solid #ccc; /* 灰色邊框 */
+	width: 200px; /* 固定寬度 200px */
+	padding: 10px; /* 內距 10px */
+	margin: 10px; /* 外距 10px */
+	text-align: center; /* 文字置中 */
+	background: #fff8e1; /* 淡黃色背景 */
+	border-radius: 8px; /* 圓角 8px */
+	box-shadow: 2px 2px 5px #ccc; /* 陰影效果 */
+}
+
+.card img {
+	width: 100%; /* 圖片寬度撐滿卡片 */
+	height: 120px; /* 高度固定為 120px */
+	object-fit: cover; /* 圖片填滿容器，保持比例，裁剪多餘部分 */
+	border-radius: 4px; /* 圓角 4px */
+}
+
+.map-region.highlight {
+	fill: #ff0000; /* 如果區域有 `highlight` 類別，填色為紅色 */
+}
+
+#tooltip {
+	position: absolute; /* 絕對定位（可自由移動） */
+	display: none; /* 預設隱藏 */
+	background: #fff; /* 白色背景 */
+	border: 1px solid #ccc; /* 灰色邊框 */
+	padding: 8px; /* 內距 8px */
+	border-radius: 4px; /* 圓角 4px */
+	pointer-events: none;
+	font-size: 14px;
+	z-index: 999;
+}
+
+#svg-wrapper {
+	display: flex; /* 使用 flexbox */
+	justify-content: space-between; /* 左右分散對齊 */
+	margin-top: 20px; /* 上方留白 20px */
+	width: 100%;
+}
+
+#svg-wrapper svg {
+	max-width: 100%; /* SVG 最大寬度為容器寬度 */
+	height: auto; /* 自動高度 */
+	max-width: 60%; /* 限制 SVG 寬度最多為容器的 60% */
+	height: auto;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-effect {
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+.float-effect:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+}
+
