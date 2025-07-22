@@ -1,5 +1,4 @@
-
-// 美食資料
+// ================= 原始資料 ====================
 const foodData = {
   TWTPE: [
     { name: "豆漿蛋餅", img: "https://cc.tvbs.com.tw/img/program/upload/2021/03/25/20210325163902-e140644c.jpg", description: "美味", category: "早餐" },
@@ -30,7 +29,6 @@ const foodData = {
   ]
 };
 
-// 大區對照表
 const regionGroups = {
   north: ['TWTPE', 'TWTAO', 'TWHSZ', 'TWNWT'],
   central: ['TWNTC', 'TWCHY', 'TWYUN', 'TWMLI', 'TWTXG'],
@@ -39,7 +37,6 @@ const regionGroups = {
   islands: ['TWKNH', 'TWTTT', 'TWMAC', 'TWKIN']
 };
 
-// 對應顏色
 function getRegionGroup(regionId) {
   if (regionGroups.north.includes(regionId)) return 'north';
   if (regionGroups.central.includes(regionId)) return 'central';
@@ -60,7 +57,6 @@ function getGroupColor(group) {
   }
 }
 
-// 清除地圖高亮
 function clearHighlight() {
   document.querySelectorAll('.map-region').forEach(r => {
     r.classList.remove('highlight');
@@ -68,7 +64,6 @@ function clearHighlight() {
   });
 }
 
-// 顯示卡片
 function renderCard(item, regionId) {
   const group = getRegionGroup(regionId);
   const color = getGroupColor(group);
@@ -76,23 +71,38 @@ function renderCard(item, regionId) {
   card.className = 'card shadow-sm col float-effect';
   card.style.backgroundColor = color;
   card.innerHTML = `
-    <img src="${item.img}" alt="${item.name}" class="card-img-top" />
+    <img src="${item.img || 'https://via.placeholder.com/200x120?text=No+Image'}" alt="${item.name}" class="card-img-top" />
     <div class="card-body">
       <h5 class="card-title">${item.name}</h5>
-      <p class="card-text">${item.description}</p>
+      <p class="card-text">${item.description || item.type || ''}</p>
+      ${item.address ? `<p class="card-text">📍 ${item.address}</p>` : ''}
+      ${item.phone ? `<p class="card-text">📞 ${item.phone}</p>` : ''}
+      ${item.rating ? `<p class="card-text">⭐ 評分：${item.rating}</p>` : ''}
     </div>
   `;
   return card;
 }
 
-// 地圖事件處理
+// 🌟 從後端取得餐廳資料
+function loadBackendRestaurants(countyName, regionId) {
+  fetch(`/api/restaurants?county=${encodeURIComponent(countyName)}`)
+    .then(res => res.json())
+    .then(data => {
+      const container = document.getElementById('card-container');
+      data.forEach(item => {
+        container.appendChild(renderCard(item, regionId));
+      });
+    })
+    .catch(err => console.error("載入後端資料錯誤:", err));
+}
+
 const tooltip = document.getElementById('tooltip');
 document.querySelectorAll('.map-region').forEach(region => {
   region.addEventListener('click', () => {
     const regionId = region.id;
     clearHighlight();
+    document.getElementById('card-container').innerHTML = '';
 
-    // ✅ 新增這兩行來清空分類與搜尋欄位
     document.getElementById('category-select').value = '';
     document.getElementById('search-input').value = '';
 
@@ -101,7 +111,23 @@ document.querySelectorAll('.map-region').forEach(region => {
     region.style.fill = color;
 
     document.getElementById('region-select').value = regionId;
-    filterByRegionAndCategory();
+
+    // 原本資料
+    if (foodData[regionId]) {
+      foodData[regionId].forEach(item => {
+        document.getElementById('card-container').appendChild(renderCard(item, regionId));
+      });
+    }
+
+    // 🌟 新增：根據 ID 轉換成縣市名稱
+    const countyMap = {
+      TWTPE: "台北市", TWTAO: "桃園市", TWHSZ: "新竹市", TWNWT: "新北市", TWPIF: "屏東縣",
+      TWKIN: "金門縣", TWTXG: "台中市", TWTTT: "台東縣", TWNTC: "台中市", // 補充對照表...
+    };
+    const countyName = countyMap[regionId] || "台中市";
+
+    // 🌟 呼叫後端 API
+    loadBackendRestaurants(countyName, regionId);
   });
 
   region.addEventListener('mousemove', (e) => {
@@ -116,7 +142,44 @@ document.querySelectorAll('.map-region').forEach(region => {
   });
 });
 
-// 篩選功能（地區＋分類）
+document.getElementById('reset-btn').addEventListener('click', () => {
+  document.getElementById('search-input').value = '';
+  document.getElementById('region-select').value = '';
+  document.getElementById('category-select').value = '';
+  clearHighlight();
+  document.getElementById('card-container').innerHTML = '';
+});
+
+document.getElementById('region-select').addEventListener('change', filterByRegionAndCategory);
+document.getElementById('category-select').addEventListener('change', filterByRegionAndCategory);
+
+document.getElementById('search-input').addEventListener('input', e => {
+  const kw = e.target.value.trim().toLowerCase();
+  const container = document.getElementById('card-container');
+  container.innerHTML = '';
+  clearHighlight();
+  if (!kw) return;
+
+  Object.entries(foodData).forEach(([regionId, items]) => {
+    const regionEl = document.getElementById(regionId);
+    const group = getRegionGroup(regionId);
+    const color = getGroupColor(group);
+
+    const matched = items.filter(i =>
+      i.name.toLowerCase().includes(kw) ||
+      i.description.toLowerCase().includes(kw) ||
+      (i.category && i.category.toLowerCase().split(',').map(c => c.trim()).includes(kw))
+    );
+
+    if (matched.length > 0 && regionEl) {
+      regionEl.style.fill = color;
+      matched.forEach(item => {
+        container.appendChild(renderCard(item, regionId));
+      });
+    }
+  });
+});
+
 function filterByRegionAndCategory() {
   const regionId = document.getElementById('region-select').value;
   const category = document.getElementById('category-select').value.trim().toLowerCase();
@@ -161,44 +224,3 @@ function filterByRegionAndCategory() {
     container.appendChild(renderCard(item, regionId));
   });
 }
-
-// 關鍵字搜尋
-document.getElementById('search-input').addEventListener('input', e => {
-  const kw = e.target.value.trim().toLowerCase();
-  const container = document.getElementById('card-container');
-  container.innerHTML = '';
-  clearHighlight();
-  if (!kw) return;
-
-  Object.entries(foodData).forEach(([regionId, items]) => {
-    const regionEl = document.getElementById(regionId);
-    const group = getRegionGroup(regionId);
-    const color = getGroupColor(group);
-
-    const matched = items.filter(i =>
-      i.name.toLowerCase().includes(kw) ||
-      i.description.toLowerCase().includes(kw) ||
-      (i.category && i.category.toLowerCase().split(',').map(c => c.trim()).includes(kw))
-    );
-
-    if (matched.length > 0 && regionEl) {
-      regionEl.style.fill = color;
-      matched.forEach(item => {
-        container.appendChild(renderCard(item, regionId));
-      });
-    }
-  });
-});
-
-// 清空按鈕
-document.getElementById('reset-btn').addEventListener('click', () => {
-  document.getElementById('search-input').value = '';
-  document.getElementById('region-select').value = '';
-  document.getElementById('category-select').value = '';
-  clearHighlight();
-  document.getElementById('card-container').innerHTML = '';
-});
-
-// 下拉選單觸發
-document.getElementById('region-select').addEventListener('change', filterByRegionAndCategory);
-document.getElementById('category-select').addEventListener('change', filterByRegionAndCategory);

@@ -4,11 +4,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
+
 import com.example.foodmap.model.Restaurant;
 import com.example.foodmap.service.RestaurantService;
 
 @RestController
 @RequestMapping("/api/restaurants")
+@CrossOrigin(origins = "*") // 允許所有前端網域跨域請求，開發用
 public class RestaurantController {
 
     private final RestaurantService service;
@@ -20,7 +22,7 @@ public class RestaurantController {
     // GET 多條件查詢 + 分頁
     @GetMapping
     public Page<Restaurant> search(
-            @RequestParam String county,
+            @RequestParam(required = false) String county,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "rating") String sortBy,

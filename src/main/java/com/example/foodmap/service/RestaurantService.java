@@ -2,52 +2,59 @@ package com.example.foodmap.service;
 
 import com.example.foodmap.model.Restaurant;
 import com.example.foodmap.repository.RestaurantRepository;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RestaurantService {
 
-    private final RestaurantRepository repository;
+    private final RestaurantRepository restaurantRepository;
 
-    public RestaurantService(RestaurantRepository repository) {
-        this.repository = repository;
+    public RestaurantService(RestaurantRepository restaurantRepository) {
+        this.restaurantRepository = restaurantRepository;
     }
 
-    // 根據縣市取得餐廳列表
-    public List<Restaurant> getRestaurantsByCounty(String county) {
-        return repository.findByCounty(county);
-    }
-
-    // 多條件查詢 + 分頁
+    // 多條件分頁查詢，根據 type 是否空白選擇不同方法
     public Page<Restaurant> searchRestaurants(String county, Double minRating, String type, Pageable pageable) {
-        return repository.findByCountyAndRatingGreaterThanEqualAndTypeContainingIgnoreCase(county, minRating, type, pageable);
+        if (type == null || type.trim().isEmpty()) {
+            // type 空白時，只根據 county 查詢
+            return restaurantRepository.findByCounty(county, pageable);
+        } else {
+            // 有指定 type，依多條件查詢
+            return restaurantRepository.findByCountyAndRatingGreaterThanEqualAndTypeContainingIgnoreCase(
+                    county, minRating, type, pageable);
+        }
     }
 
     // 新增餐廳
     public Restaurant createRestaurant(Restaurant restaurant) {
-        return repository.save(restaurant);
+        return restaurantRepository.save(restaurant);
     }
 
     // 修改餐廳
-    public Restaurant updateRestaurant(Long id, Restaurant newData) {
-        return repository.findById(id).map(r -> {
-            r.setName(newData.getName());
-            r.setCounty(newData.getCounty());
-            r.setAddress(newData.getAddress());
-            r.setPhone(newData.getPhone());
-            r.setRating(newData.getRating());
-            r.setType(newData.getType());
-            return repository.save(r);
-        }).orElseThrow(() -> new RuntimeException("Restaurant not found"));
+    public Restaurant updateRestaurant(Long id, Restaurant updated) {
+        Optional<Restaurant> optional = restaurantRepository.findById(id);
+        if (optional.isPresent()) {
+            Restaurant existing = optional.get();
+            // 更新欄位
+            existing.setName(updated.getName());
+            existing.setCounty(updated.getCounty());
+            existing.setAddress(updated.getAddress());
+            existing.setPhone(updated.getPhone());
+            existing.setRating(updated.getRating());
+            existing.setType(updated.getType());
+            return restaurantRepository.save(existing);
+        } else {
+            // 找不到該餐廳，這裡可自行決定要丟例外或回 null
+            return null;
+        }
     }
 
     // 刪除餐廳
     public void deleteRestaurant(Long id) {
-        repository.deleteById(id);
+        restaurantRepository.deleteById(id);
     }
 }
