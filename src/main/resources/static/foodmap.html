@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>台灣地圖互動</title>
+<meta charset="utf-8">
+<title>框框展示</title>
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+
+<style>
+body {
+	font-family: sans-serif;
+	padding: 20px;
+}
+
+.map-region {
+	cursor: pointer; /* 滑鼠移到地圖區域時，顯示為可點擊的手指形狀 */
+	transition: fill 0.9s; /* 填色變化時，有 0.9 秒的平滑動畫 */
+	fill: #ccc; /* 預設填色為淺灰色 */
+}
+
+.map-region:hover {
+	fill: #ffa726; /* 滑鼠移到地圖區域時，填色變成橘黃色 */
+}
+
+.map-region.active {
+	fill: orange; /* 或其他你希望的顏色 */
+	stroke: #333;
+	stroke-width: 2;
+}
+
+#card-container {
+	display: flex; /* 使用 flexbox 排列子元素（.card） */
+	flex-wrap: wrap; /* 超過一行就自動換行排列 */
+	margin-top: 20px; /* 上方留白 20px */
+}
+
+.card {
+	border: 1px solid #ccc; /* 灰色邊框 */
+	width: 200px; /* 固定寬度 200px */
+	padding: 10px; /* 內距 10px */
+	margin: 10px; /* 外距 10px */
+	text-align: center; /* 文字置中 */
+	background: #fff8e1; /* 淡黃色背景 */
+	border-radius: 8px; /* 圓角 8px */
+	box-shadow: 2px 2px 5px #ccc; /* 陰影效果 */
+}
+
+.card img {
+	width: 100%; /* 圖片寬度撐滿卡片 */
+	height: 120px; /* 高度固定為 120px */
+	object-fit: cover; /* 圖片填滿容器，保持比例，裁剪多餘部分 */
+	border-radius: 4px; /* 圓角 4px */
+}
+
+.map-region.highlight {
+	fill: #ff0000; /* 如果區域有 `highlight` 類別，填色為紅色 */
+}
+
+#tooltip {
+	position: absolute; /* 絕對定位（可自由移動） */
+	display: none; /* 預設隱藏 */
+	background: #fff; /* 白色背景 */
+	border: 1px solid #ccc; /* 灰色邊框 */
+	padding: 8px; /* 內距 8px */
+	border-radius: 4px; /* 圓角 4px */
+	pointer-events: none;
+	font-size: 14px;
+	z-index: 999;
+}
+
+#svg-wrapper {
+	display: flex; /* 使用 flexbox */
+	justify-content: space-between; /* 左右分散對齊 */
+	margin-top: 20px; /* 上方留白 20px */
+	width: 100%;
+}
+
+#svg-wrapper svg {
+	max-width: 100%; /* SVG 最大寬度為容器寬度 */
+	height: auto; /* 自動高度 */
+	max-width: 60%; /* 限制 SVG 寬度最多為容器的 60% */
+	height: auto;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-effect {
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+.float-effect:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+}
+
+
+</style>
+
+</head>
+
+<body>
+	<h1 style="text-align: center;">台灣美食地圖</h1>
+
+
+	<div class="top-left-menu">
+		<input type="text" id="search-input" placeholder="搜尋..."> <select
+			id="region-select">
+			<option value="">選擇地區</option>
+			<option value="TWTPE">台北市</option>
+			<option value="TWNWT">新北市</option>
+			<option value="TWKEE">基隆市</option>
+			<option value="TWTAO">桃園市</option>
+			<option value="TWHSZ">新竹市</option>
+			<option value="TWHSQ">新竹縣</option>
+			<option value="TWMIA">苗栗縣</option>
+			<option value="TWTXG">台中市</option>
+			<option value="TWCHA">彰化縣</option>
+			<option value="TWNAN">南投縣</option>
+			<option value="TWYUN">雲林縣</option>
+			<option value="TWCYI">嘉義市</option>
+			<option value="TWCYQ">嘉義縣</option>
+			<option value="TWTNN">台南市</option>
+			<option value="TWKHH">高雄市</option>
+			<option value="TWPIF">屏東縣</option>
+			<option value="TWTTT">台東縣</option>
+			<option value="TWHUA">花蓮縣</option>
+			<option value="TWILA">宜蘭縣</option>
+			<option value="TWPEN">澎湖縣</option>
+			<option value="TWKIN">金門縣</option>
+			<option value="TWLIE">連江縣</option>
+		</select> <select id="category-select" name="category">
+			<option value="">選擇類別</option>
+			<option value="早餐">早餐</option>
+			<option value="早午餐">早午餐</option>
+			<option value="午餐">午餐</option>
+			<option value="下午茶">下午茶</option>
+			<option value="小吃">小吃</option>
+			<option value="晚餐">晚餐</option>
+			<option value="甜點">甜點</option>
+			<option value="冰品">冰品</option>
+			<option value="銅板美食">銅板美食</option>
+		</select>
+		<button id="reset-btn" type="button">重置</button>
+	</div>
+
+
+
+	<div id="card-container" class="row-cols-md-4"></div>
+	<div id="tooltip"
+		style="position: absolute; display: none; background: #333; color: #fff; padding: 5px; border-radius: 3px;"></div>
+	</div>
+	</div>
+	<svg baseprofile="tiny" fill="#6f9c76" height="1000" stroke="#ffffff"
+		stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"
+		version="1.2" viewBox="0 0 1000 1000" width="1000"
+		xmlns="http://www.w3.org/2000/svg">
+ <g id="features">
+  <path id="TWKIN" class="map-region" data-name="金門縣"
+			d="M181.2 423.5l0 0.1-1.1-0.4-0.3-0.4 0.2-0.4 0.4-0.8-1.3-0.9-0.2-0.3-0.1-0.1-2.5-1.9-1.8-1.9-2.7 1-1.3 1.6 0.2 0.7-0.1 0.6-0.3 0.2-0.3-0.1-0.4 2.4-5 5.9-11.4-4.1 0.2 1-0.2 1-0.3 0.1 1.1 1.1-0.4 8.2-3.3 2.6 2.5 2.7-1.4-0.6-1.9-0.2-1.7-0.7-0.9-1.5 0.3-0.6 1.6-1.9 0.5-1 0.1-1.4 0-1.8-0.6-3.1-1.2-3-0.2-1.6 1.1-0.6 5.5-2.7 7.2 4.7 5-0.6 0.8-6.3 1.7-3.9 5.3-1.1 5.2 4.7 2 5.3z m0.2 10.5l0.3-2.1 0.3 0-0.2 1.7-0.4 0.4z m0.9-5l-1-3 0.1-0.7 0.3-0.4 0.8 2.4-0.2 1.7z"
+			name="金門縣">
+  </path>
+  <path id="TWLIE" class="map-region" data-name="連江縣"
+			d="M471.2 47.6l0.1 0.6-0.3 0-0.7 0.1-0.5 0.1-0.1-0.9 0.3-0.4 0.1-0.1-0.1-0.3-0.1 0-0.1-0.1 0.4-0.5 0.2-0.1 0.4-0.2 0.2-0.3 0.6 1.3-0.6 0.7 0.2 0.1z m-12.4 22.5l-0.1-0.3-0.2 0.5 0.2 0.7 0.3 0.3 0.3 0.1 0.4 0.1 0.3 0 0.5 0.1 0.3 0.2 0.1 0.5 0.2-0.3 0.6-0.1 0.4-0.3 0.3-0.2 0-0.5 0.1-0.5 0.6-0.7 0.1 0 0.2-0.1 0.6 0.1 0.5 0 0.3 0.1 0.1 0 0.5 0 0.7 0.1 0.8-0.5 0 0.3-0.3 0.3-0.2 0.4-0.3 0-0.2 0.2-0.2 0.4 0 0.5-0.1 0.3 0 0.1-0.3 0.4-0.3 0.5-0.1 0.1-0.3 0.2-0.2-0.4-0.2 0-0.7 0.1-0.2 0.3-0.4 0.6-1 1-0.2 0-0.4-0.3-0.7-0.1-0.6 0.1-0.2 1.2-0.2 0.1-0.7 0.1-0.1-0.3-0.4-0.5-0.2-0.2-0.5 0.1-0.6 0.1-0.9-0.3-0.3-1 0.3-0.6 0.4-0.3 0.4-0.4 0.3-0.7-0.7-0.5 0.4-0.5 0.4 0 0.2 0 0.1-0.5-0.5-0.8 0-0.8 0.3-0.4 0.4 0 0.3 0.4 0.3 0.1 0.1 0 0.1 0 0.5 0.3-0.3 0.9-0.1 0.2z m12.6-10.9l-0.4 0-0.6 0-1.1-0.3-0.4 0.7-0.4 0.1-0.2 0.2-0.3 0.4 0 0.7 0.2 0.7 0 0.6-0.2 0.9 0.1 0.4 0.3 0.1 0.1 0.3-0.5 0.2-0.9-0.2-0.5 0.2 0-1 0.1-1.5 0.3-1.4 0.3-0.5-0.2-0.4 0-0.6 0.1-0.2 1.1-0.1 0.5-0.6 0.5-0.2 0.6-0.3 1-0.9 0.3-1 0.5-0.3 0.6-0.1 0.4-0.3 0.6 0.1 0.1 0.5 0.3 0.4 0.1 0 0.3 0 0 0.9 0 0.9 0.7-0.7 0.2 0 0.6 0 0.1 0.1 0 0.3 0 0.9-0.7 0.2 0.1 0.5 0.3 0.2 0 0.3 0 0.7-0.5-0.7-0.2-0.7-0.5-0.7-0.7 0-0.5 0-0.3 0.2-0.4 0.3-0.5 0.1-0.4 0.6z m2.1-5.6l-0.4 0.2-0.3 0-0.7 0 0.1-0.7 0.7-0.2 0.1-0.4 0.7-0.1 0.7-0.2-0.9 1.4z"
+			name="連江縣">
+  </path>
+  <path id="TWPEN" class="map-region" data-name="澎湖縣"
+			d="M409.7 611.6l0.9 2.9-0.4 2.2-1.4-1.4-1.9-1.3-2-0.4-2.8 1.6-2.1 0.3-1 0.5-0.5 1.1-0.8 2.9-0.5 0.9-3.4 2-3.4 0.5-3.5-1.4-3.5-3.5 0.9-1.8 1.9 2.3 2.9 0.6 3.1-0.8 2.6-2.1-1.8-0.7-1.4-0.8-1.1-1.2-1-1.6-0.4 0.7 0 0.2-0.2 0.2-0.7 0.4-0.2-2.9 0.2-2.9 1.3 0 1.5 0.4 5.3-3.4 3.4-1.1-0.9 3.2-0.4 0.9 2.9-0.9 2.2 0.3 1.6-0.2 1.2-1.9 3.4 6.2z m-35.8-6.2l2.3-7.5 2.3-2.2 3 2.6-1.8 1.1-1.2 2.6-2 6.1-0.1 1.6 0.5 1.4-0.2 1-2.2 0.3-1.6 0.1-1.1 0.2-0.9 0.4-0.9 0.8-2.7 0 0.5-1.5 0.9-0.9 1.3-0.5 1.8-0.1 1.6-0.6 0.4-1.5 0.1-3.4z m18.1-5l-0.6-2.5-1.5-2.1-3.1-3.1 4-3 2.4 1.3 2.3 2 1 2.1-1.8 1.7 0.7 2.5-1 1.7-1.6 0.5-0.8-1.1z"
+			name="澎湖縣">
+  </path>
+  <path id="TWTAO" class="map-region" data-name="桃園市"
+			d="M657.2 325.1l6.4-10.3 5-5.9 5.2-4.4 13.2-4.4 3.1-1.9 2.7-2.4 3.3-1.8 6.4-2.3 14.5-2.6 3 3.3 4.6 2.2 3.4 2.2 2.3 2.1 2.9 0.7 3.1 1.6 3.7 5.4 0.3 2.9-0.7 3-2.4 2.5-9.4 2.8-2.7 2.9 0.2 4.5-0.8 4.1 0.8 3.7 3.8 3.7 0.8 3.7-1 4.8 3.7 2.1 5.3-0.3 3.7 1.4 6 8.9-1 3.8-2.3 2.7 0.6 3.7 1 4.1 6.4 6 1.8 4-2.2 0.6-3.9 2.8 2.3 9-1.6 2.7-2.5 1-2.3-0.5-2.9 1.1-0.3 1.1-3.5-1.5-5.2-3-2.9-2.1-4-0.7-4.5-2.6-3.7-2.9-0.4-3.1 3.3-4.7 1.4-5.6-1.2-5.2-0.2-3.6-2.5-1.9-3.1-1.6-1.9-3.3-2.4-2.5-2.8 0.2-2.8-0.5-2.2-2.2-3-2.2-4.8-1.5-2.4-2.7 0.8-4.2-2.6-3-4.9-1.6-3-1.4-3.1-0.9-3.6-1.4-2.9-6.3-3.3-2.2-9.8 0.7-2.3-0.8z"
+			name="桃園市">
+  </path>
+  <path id="TWHSQ" class="map-region" data-name="新竹縣"
+			d="M657.2 325.1l2.3 0.8 9.8-0.7 3.3 2.2 2.9 6.3 3.6 1.4 3.1 0.9 3 1.4 4.9 1.6 2.6 3-0.8 4.2 2.4 2.7 4.8 1.5 3 2.2 2.2 2.2 2.8 0.5 2.8-0.2 2.4 2.5 1.9 3.3 3.1 1.6 2.5 1.9 0.2 3.6 1.2 5.2-1.4 5.6-3.3 4.7 0.4 3.1 3.7 2.9 4.5 2.6 4 0.7 2.9 2.1 5.2 3 3.5 1.5-1.7 4.7-1 3.4 0.4 3.2-2.7 4.2-10.1 10.2-3.1 7.5-2-0.5-7.7 0.7-0.5 0.4-0.5-3.5-3.3-5.6-2.3-2.4-1-3.1-3.6-2.9-9.1 2.3-3.4-0.4-4.9 0.4-5.5 1.5-3-0.7 0.7-3.7 0.9-3.3-0.7-2.9-0.7-2.1 0.7-2.3 0.5-2.4 0.3-2.8-0.6-3.8-2.7-2.4-8.8-4.2-4.3-3.2-2.8-3.2-3.2-8 1.8-2.2 1.6-4.1 2.5-3.1 4.2-1.7 3.7-0.6 1.7-1 0.7-2.7-1.3-2.6-2.8-2.8-3.9-2-10.9-3.5-6-2.6 0.1-0.1 1.1-1.6 0.4-2.7 0.6-2.1 1.5-2.1 1.9-1.6 1.8-0.6-0.1-0.9 0.5-2.1 1.6-4.4 1.5-2.3z"
+			name="新竹縣">
+  </path>
+  <path id="TWHSZ" class="map-region" data-name="新竹市"
+			d="M646.3 345.6l6 2.6 10.9 3.5 3.9 2 2.8 2.8 1.3 2.6-0.7 2.7-1.7 1-3.7 0.6-4.2 1.7-2.5 3.1-1.6 4.1-1.8 2.2-0.2 0.2-3.3 0.8-3.1-1.3-2-2.7-3-1.9-5-1.9 0.8-3 4-8.2 1.6-2.1 0.5-1.2 0-1.2-0.5-1.3-0.8-1.6 1.1-2.2 1.2-1.3z"
+			name="新竹市">
+  </path>
+  <path id="TWMIA" class="map-region" data-name="苗栗縣"
+			d="M655 374.5l3.2 8 2.8 3.2 4.3 3.2 8.8 4.2 2.7 2.4 0.6 3.8-0.3 2.8-0.5 2.4-0.7 2.3 0.7 2.1 0.7 2.9-0.9 3.3-0.7 3.7 3 0.7 5.5-1.5 4.9-0.4 3.4 0.4 9.1-2.3 3.6 2.9 1 3.1 2.3 2.4 3.3 5.6 0.5 3.5-2.7 1.9-1.3 4-3.5 1.5-3.9-0.1-3 2.2-3.3 3.1-4.2 2.4-8.4 6.6-4.9 2-6.4 3.5-3.9-1.6-3.6-4-4.4-1.7-7.1-0.6-4 2.4-0.6 5.3-3.7 2-8.8 0.5-8.4-4.8-4.7-0.9-5.3-2.6-10.9-8-4.5-3.9-3.4-3.6-6.6-10.3 5.2-5.8 1.3-2.9 0.7-4.8 1.5-4 4.3-7.5 1.2-4.5 1.1-2 4.8-1.4 1.4-1.5 0.8-1.9 1-1.8 3-3.2 3.4-2.4 4-1.1 5.2 1-0.7-3.9 1.9-2.7 2.7-2.7 1.3-4.2 0.6-1.3 2.6-1.3 0.3-0.9 5 1.9 3 1.9 2 2.7 3.1 1.3 3.3-0.8 0.2-0.2z"
+			name="苗栗縣">
+  </path>
+  <path id="TWTXG" class="map-region" data-name="台中市"
+			d="M712.3 433.2l0.5-0.4 7.7-0.7 2 0.5 2.6 0.8-0.5 4 1.1 2.6 3.5 0.8 3.2 1.9 2.7 1.8 2.8-0.4 3.4-1.7 3.6 0 4.2 3.4-3.4 3.5-0.3 3-1.7 4.5-5.4 3.4-2.2 3.6-0.9 3.7-2.2 2.7-2.5 1.3-0.9 1.4-2 1.5-9.6-0.9-3.4-0.8-3.4 0.2-8 3.2-4.5 0.7-4.4 0.2-6.4 3.3-3.2 0.6-3.6 2.1-5.7 5.5-3.6 1.4-4.8-0.1-3.4 2.8-1.9 3.9-2.5 0.7-6.4-4.8-2.2 1.4-4.2 5.5-4.3 0.2-7.3-1.1-4.6 2.2-2.7 6.1-5.4 10.4-3.6 3.4-3 0.5-13-1.8-3-0.1-0.1-1-3.9-2.6-3.1-0.5-0.9-2.5 0-2.8-1.4-2.9-2.3-3.6-3.2-2.6-8.5-2.5-3.3-3.9-0.7-5.5-1.9-4.6-2.9-2.5-4.2-1.3 0.5-0.6 0.5-2.4 2.4-1.9 1.6-4.7 1.9-8.8 6.7-11.7 2.1-7.1 2.4-4 9.6-10.6 6.6 10.3 3.4 3.6 4.5 3.9 10.9 8 5.3 2.6 4.7 0.9 8.4 4.8 8.8-0.5 3.7-2 0.6-5.3 4-2.4 7.1 0.6 4.4 1.7 3.6 4 3.9 1.6 6.4-3.5 4.9-2 8.4-6.6 4.2-2.4 3.3-3.1 3-2.2 3.9 0.1 3.5-1.5 1.3-4 2.7-1.9z"
+			name="台中市">
+  </path>
+  <path id="TWCHA" class="map-region" data-name="彰化縣"
+			d="M563.1 480.3l4.2 1.3 2.9 2.5 1.9 4.6 0.7 5.5 3.3 3.9 8.5 2.5 3.2 2.6 2.3 3.6 1.4 2.9 0 2.8 0.9 2.5 3.1 0.5 3.9 2.6 0.1 1 0 2.6-3.1 1.1-0.9 2.1 0.4 2.9-1.4 3.3-1.2 3.9-0.1 4.1-0.8 4.7-0.7 9.7 1.5 4.5 2.6 2.4 2.8 1 4.1 2.1-0.7 2.5-2.8 1.1-1.8 1.7-1.7 1.1-0.7 0.5-8.7-1.7-4.2 0.1-8.7-4.4-14.2-1.6-8.4-3.2-4.8-1.3-5.4-0.3-15.9 1.9-5.5-3.2 0.6-1 1.1-5.1 0.9-2.1 5.1-4.9 1.5-2.1 1.9-5.6 3-5.6 4.2-11.6 1.9-3.3 2.2-2.2 1.8-1.2 1.5-0.8 1.2-1 0.4-2.2 0.9-2 3.7-2.9 0.8-2.2 0.4-7.2 0.7-2 1.9-1.9 8.2-9.5z"
+			name="彰化縣">
+  </path>
+  <path id="TWYUN" class="map-region" data-name="雲林縣"
+			d="M519.2 556.7l5.5 3.2 15.9-1.9 5.4 0.3 4.8 1.3 8.4 3.2 14.2 1.6 8.7 4.4 4.2-0.1 8.7 1.7 0.7-0.5 1.4 5.2-1.5 3.4-0.7 5.2 0.7 5.5-1.3 3.7-0.7 4.2 2.8 3.4 4.2 1.8 4.9-1.5 6-0.6 1.9 2.5-0.4 0-0.3 3.6 0 2.5-2.8 0.9-8.4 1.7-4.6 0.5-1.7-2.9-3.4-2.4-6 1.7-2.7 0.4-9.1-3.3-3.6-4.2-3.8-3.4-4.9 0.3-9.1 1.7-5.2 1.4-11.8 6.8-2.7 2.7-3.2 1.7-5 4.1-3.9 0.6-1.4 2.2-1.3 3.5-2.8 2.3-4.4-0.1-6-3.3-7.6 0.8-0.1 0.1-0.7 0 3.4-3.7-0.2-11.8 0.5-8.9 2-7 3.2-5.6 0.9-7.2 1.7-6.3 0.9-2.2 4.4-5.8 0.7-2 0.6-1.1 4-3.1 0.6-1.2z"
+			name="雲林縣">
+  </path>
+  <path id="TWCYQ" class="map-region" data-name="嘉義縣"
+			d="M496.5 622.6l0.7 0 0.1-0.1 7.6-0.8 6 3.3 4.4 0.1 2.8-2.3 1.3-3.5 1.4-2.2 3.9-0.6 5-4.1 3.2-1.7 2.7-2.7 11.8-6.8 5.2-1.4 9.1-1.7 4.9-0.3 3.8 3.4 3.6 4.2 9.1 3.3 2.7-0.4 6-1.7 3.4 2.4 1.7 2.9 4.6-0.5 8.4-1.7 2.8-0.9 0-2.5 0.3-3.6 0.4 0 4.4 0.5 4.8 1.9 3 0.8 3.7 2.1-0.3 3.8-2.1 3.7 0.9 3.4 1.9 4.7 0.3 4.2 0.8 2.8 5.5 1 18.4 0.1 0.6 0.2-13.3 6.8-6.1 4.8-2.5 4.9-3.1 3.7-5.5 3.1-5.8 4.4-3.2 3.8-8.9 5.3-4.2 0.4-4.9-0.5-2.6 2.6-0.1 3.5 1 3.3 0.7 4.8-6-0.7-2.7-0.8-3.6 0.5-3.8 1.7-2.7 0-3.3-2.5-1.1-3.3 1.2-10.3-0.7-5.4-7.1-7.3-1.3-3.6-1.5-3.1-2.9-1.7-5.1-1.7-6.1 0.3-11 2.1-5.6 2.5-4.4 3.3-3.4 3.4-4.8 3.7-4.1 2.6-1.8 3.6-4.5 2-5.3-1.3-6.3-1-3.8-1.4 2.8-0.2 2.3-1 1 0.3-0.6-2.3-1.6 1.2-1.3-0.4-1.8-0.1 0-2.3 1.8-4.1 2.6-0.2 3.9 0-2.6-7.5-3.1-5.8 1.4-2.6 0-1.4-2.2-1.1 0.3-1.2 1.3-1.5 0.6-1.9 3-3.8-6.2 0.4-0.2-6.3z m62.7 15.5l4.9-2 3.2-0.4 2.2-1.6-1.9-4.9-1.7-2.9-3-1.6-4-1.5-5.7 0.5-6.7 1.2-2.7 2.9 0.6 4.1 4.4 1.7 5.1 3.3 5.3 1.2z m-82.1-1.3l10.1-10.2 7.6-9.7 1.8-0.5-6.5 10.5-3.2 3.2-2.1 2.6-2.7 2.7-2.2 1.5-3.2 2.6-2.2 1.2 2.6-3.9z"
+			name="嘉義縣">
+  </path>
+  <path id="TWTNN" class="map-region" data-name="台南市"
+			d="M495.1 664.4l3.8 1.4 6.3 1 5.3 1.3 4.5-2 1.8-3.6 4.1-2.6 4.8-3.7 3.4-3.4 4.4-3.3 5.6-2.5 11-2.1 6.1-0.3 5.1 1.7 2.9 1.7 1.5 3.1 1.3 3.6 7.1 7.3 0.7 5.4-1.2 10.3 1.1 3.3 3.3 2.5 2.7 0 3.8-1.7 3.6-0.5 2.7 0.8 6 0.7-1.6 4.8-7.5 10.9-7.2 12.2-4.7 6-5.4 5.3-4.6 3.9-4.5 4.6-3.8 5.1-2.1 3.7-1.7 4-4.6 3.2-4.6 1.9-2.6 1.8-3 1.1-6.1-0.7-5.9 0.6-11.3-1.6-3.5-1.8-2.8-6.2-0.1-0.3-4.5 2.6-0.7-4.5-1.3-2.6-2.8-2.8 3.5-2.5 1.9-4.3-0.8-3.8-4.6-0.7-0.8 1.4-0.8 2.4-1.3 1.9-2.4-0.1-0.9-1.6 0.3-5-0.5-1.8-3-1.3-1.6 1.5-1.4 2.1-1.9 0.5-2.1-1.8-0.6-2.5 0.5-2.4 0.9-1.7 2.1-1.1 2.7-0.4 2.2-0.7 0.7-2.2-1-1.1-6.7-1.7 0-1.4 5.6 0-0.5-1.9-3.1-2.7-2-2.3 0.5-2.9 1.8-1 1.9-0.7 1-1.8-0.6-2.8-1-2.3 0.7-2.2 1-2.6 1.6-1.9-0.3-1.7 0.3-1.6 2.4-6.5 1.2-1.2 1.8-0.5-2.7-1.8 1.2-2.9z"
+			name="台南市">
+  </path>
+  <path id="TWKHH" class="map-region" data-name="高雄市"
+			"
+			d="M596.8 682.8l-0.7-4.8-1-3.3 0.1-3.5 2.6-2.6 4.9 0.5 4.2-0.4 8.9-5.3 3.2-3.8 5.8-4.4 5.5-3.1 3.1-3.7 2.5-4.9 6.1-4.8 13.3-6.8 3.2 0.7 4.2 1.6 3 4.2 0.5 1.5 1.4 4.2-2.2 3.5-4 1.8-1 2.3 0.7 2.9 4 2.6 4.6 3.7 2 5.5 0.2 1.8-11.2 2.8-4.7 2.9-2.9 2.8-5.6 3.7-0.6 4.1 1.6 4.3-1.9 3.5-5.3 2.9-0.7 5 1.6 7.1-2.2 9.5 0 8.1-3.1 4.2-6.2 5.3-1.7 7 1 5.9 2.2 3.3 4.4 4.6 0.9 3.5-2.8 0.4-3.8-0.7-3.1 0.2-6.1 4.8-4.3-4-5.4-6.4-5.2 1.3-4.8 4.3-9.4-4.8-6.8 3.2-4.6 5.1-5.7 2.1-12.9-0.8-1.3 3.5-0.9 5.2-1.9 5.7 0.4 5-0.1 6.9-4 15.3-0.2 5.1 2 5.4 0.3 5.9-5.8 14.8-1.9-0.8-1.1 0-1.4 0.5-1.5 0.1-9.4-7.4-8.8-12.4 9.2 11.1-1-5.2-1.6-2.9-1.2-2.3-3.8-4.4-6.5-6-2.5-3.1-1.2-3.4 1.6-3.3 0.8-3-1.1-4.1-1.9-4.1-3.6-5.5-3.3-7.4-0.7-3.3 0-2.1 1.1-2.6 0.3-1.7-0.4-0.9-1-0.7-0.9-0.9-0.4-1.7-2.1-3.5-0.5-1.4-1.6-9.9 4.5-2.6 0.1 0.3 2.8 6.2 3.5 1.8 11.3 1.6 5.9-0.6 6.1 0.7 3-1.1 2.6-1.8 4.6-1.9 4.6-3.2 1.7-4 2.1-3.7 3.8-5.1 4.5-4.6 4.6-3.9 5.4-5.3 4.7-6 7.2-12.2 7.5-10.9 1.6-4.8z"
+			name="高雄市">
+  </path>
+  <path id="TWPIF" class="map-region" data-name="屏東縣"
+			d="M551.1 836.2l5.8-14.8-0.3-5.9-2-5.4 0.2-5.1 4-15.3 0.1-6.9-0.4-5 1.9-5.7 0.9-5.2 1.3-3.5 12.9 0.8 5.7-2.1 4.6-5.1 6.8-3.2 9.4 4.8 4.8-4.3 5.2-1.3 5.4 6.4 4.3 4 6.1-4.8 3.1-0.2 3.8 0.7 2.5 4.7 0.5 3.5 3.9 1 4 2.6-2 9.9-0.1 3.8-1.5 3.5-7 3-3.5 2-5.5 1.2-3.9 3.2-1.7 4.7-2.6 4.8-2.2 5.4-0.6 10.6 0.9 4.7 1.4 4.4 0.8 5.1 0 3.8 1.9 3.7 3.3 4-1.8 2.7-3.8 2.3-1.5 2.8-0.4 3.3 2 2.8 2.4 1.2 2.3 3.2-0.1 4.1 0.4 4.4 2.3 4.3 3.3 3.5 7.4 3.4 3.2-0.3 0.6 37.2-1.1 5.3-1.8 4.3-2.4 1.8-2.9 2.7 0.1 6 1 6.6-0.2 4.2-3.3-4.9-4.9-3.7-5.7-2.5-5.7-1.4-0.2 4.7-1.7 1.7-2.4-0.6-2.7-2.2-0.1-1.7 0.9-5-4-6.7-0.3-1.8 0-1.4 0.3-2.4 0-7.7 0.4-2.3 1.8-2.5 0.4-2.2-14.4-37.2-1.1-2.1-4-4.9-3.2-7.1-1.4-2.1-5.9-4.6-2.3-1.3-0.8-0.3-0.8-0.6-0.7-2.6-0.5-1-3.1-2.1-7.3-3.4-3.2-2.3-3.5-3-1.6-1-0.2-0.1z"
+			name="屏東縣">
+  </path>
+  <path id="TWTTT" class="map-region" data-name="台東縣"
+			d="M634.7 759.1l2.8-0.4-0.9-3.5-4.4-4.6-2.2-3.3-1-5.9 1.7-7 6.2-5.3 3.1-4.2 0-8.1 2.2-9.5-1.6-7.1 0.7-5 5.3-2.9 1.9-3.5-1.6-4.3 0.6-4.1 5.6-3.7 2.9-2.8 4.7-2.9 11.2-2.8 0.8 5.3 3.7 5.9 5.6 2 4.4 2.1 3.6 3.4 4.5 0.7 4.1 1.1 6.6 11.5 8.5 7 5.9 0.8 4.7-2.7 0.6-4.4 0-4.9 2.2-4.3 3.5-9.6 2.6-5.5 1.8-6.1 1.9-4.8 2.5-3.7 2.6-5-0.4-4.9-1.3-5 2.8-3.9 7.8-3.8 2.5 0.8-3.3 19-1.6 3.5-5.1 6.8-1.9 3.5-1.5 4.4-1 8.3 0.1 7.3-0.8 6.9-3.5 7.2-1.5 1.6-3.4 2.5-1.5 1.6-0.8 1.6-1.2 4.2-3.5 6.1-2.1 9.4-1.5 4.2-7.4 10.7-0.9 2-10 8.4-2.4 2.8-0.4 1.9 0.5 4.5-0.1 2-0.9 2.3-1.6 2.6-3.4 4.3-3.4 3.2-11.6 7.8-7.8 8.5-1.9 1-1.5 2-3.8 9.7-1.8 3.6-5.8 7.3-2.4 4.3-1.3 8.8-3.5 12.1-6.9 12.1-1 4.1-1.2 11.6 0.2 10.5-3.2 0.3-7.4-3.4-3.3-3.5-2.3-4.3-0.4-4.4 0.1-4.1-2.3-3.2-2.4-1.2-2-2.8 0.4-3.3 1.5-2.8 3.8-2.3 1.8-2.7-3.3-4-1.9-3.7 0-3.8-0.8-5.1-1.4-4.4-0.9-4.7 0.6-10.6 2.2-5.4 2.6-4.8 1.7-4.7 3.9-3.2 5.5-1.2 3.5-2 7-3 1.5-3.5 0.1-3.8 2-9.9-4-2.6-3.9-1-0.5-3.5-2.5-4.7z m134.6 166.8l3.3 2.6 1.5 1.7-0.2 2-3.9 1.3-5.3-2.2-4.9-3.4-2.8-2.7 0.8-1.9 0-1.9-0.7-1.6-1.3-1.5 14.1 0 0 1.2-0.4 0.8-0.6 1.7-0.2 2.1 0.6 1.8z m-19.5-125.9l-1-3 0.4-0.4 7.3-0.6 0.8 0.5 0.5 1.4-0.6 2.8-0.6 1.2-0.3 1.2 0.3 1.1-0.1 0.8-0.5-0.1-1.3 0-0.6-0.2-0.3-0.4-1.9-0.7-2.1-3.6z"
+			name="台東縣">
+  </path>
+  <path id="TWHUA" class="map-region" data-name="花蓮縣"
+			d="M727.6 474.4l2-1.5 0.9-1.4 2.5-1.3 2.2-2.7 0.9-3.7 2.2-3.6 5.4-3.4 1.7-4.5 0.3-3 3.4-3.5 1.8 1.5 4.7 2.2 10.8 2.8 6 2.3 4.7 0 3.5-3.3 1.7-4.3 2.7-0.6 13.4 7.9 8 1.3 0.8 0 0.5 0.5 0.6 1.1 0.5 1.1 0.2 0.7-1 1.7-4.2 4.1-4.6 6.3-3.3 2.7-1 1.4 0.5 1.5-0.6 1.1-4.9 3.6-1.8 1.8-2 4.3-2 8.8-5.4 7.8-1.1 3.2 0.2 3.4 1.3 3.8 1.1 1.6 0.9 0.7 0.6 1 0.1 2.3-0.8 2.7-2.7 4.1-0.5 2.5-0.3 4.6-2.3 11.7-4.6 12.4-5.8 28.8-3.4 7.1-8 46.2-2.5-0.8-7.8 3.8-2.8 3.9 1.3 5 0.4 4.9-2.6 5-2.5 3.7-1.9 4.8-1.8 6.1-2.6 5.5-3.5 9.6-2.2 4.3 0 4.9-0.6 4.4-4.7 2.7-5.9-0.8-8.5-7-6.6-11.5-4.1-1.1-4.5-0.7-3.6-3.4-4.4-2.1-5.6-2-3.7-5.9-0.8-5.3-0.2-1.8-2-5.5-4.6-3.7-4-2.6-0.7-2.9 1-2.3 4-1.8 2.2-3.5-1.4-4.2 4.3-2.5 2.2-2.1-1.2-4.4 1.1-1.9 1.1-3 3.7-2.7 5.4-1.2 5.3-0.2 3.8-3.4 1-6.2 2.8-3.7 5.5-2 3.3-2.3 1.1-3.6 2.3-9.1 0.9-6-0.7-5.2-0.8-3.9-2.3-2.9-1.5-2.9 4.1-6.8 0.1-2.7 1.8-5.1 2.8-6.1 2.2-6.3 1.1-7.2 0.5-5.4-1.3-3.2-1.5-2.4 1.7-5.5 3.7-7.7 5.8-7.6 0.1-2.7-1-3.3-3.8-2.4-2-2.2-0.2-7.2 2.7-2.1 4.7-1.6 3.8-1.7-0.2-2.6-1-4.5z"
+			name="花蓮縣">
+  </path>
+  <path id="TWILA" class="map-region" data-name="宜蘭縣"
+			d="M740.7 399.4l0.3-1.1 2.9-1.1 2.3 0.5 2.5-1 1.6-2.7-2.3-9 3.9-2.8 2.2-0.6 4.2-1.2 3.5-1.3 2.7-2.4 3.6-2.5 4.8-2.3 2.8-2-0.3-1.4-0.7-2.3-0.1-3 1.4-3.6 3.4-2.9 2.7-1.6 9.4-3.8 9.7-5.9 4.5-1.3 3.6-2.6 2.3-3.7 2.3-2.9 2.7-1.4 2.5-0.9 3.3-2.1 1.2-2.8-1.8-2.5 1-2.2 8.1-1.6 2.6-1.8 6-3.2 4.3-0.9 2.4 1.4 0.6 0.8-8.6 4.3-4 3.4-13.5 16.4-2.1 3.5-1.7 4.8-1.1 5.6-0.4 5.5 0.2 5.3 2.4 11.2-0.2 2.9-1 2.8 0.2 5.8 2.4 4.5 4.7 2.9 5.5 1.1 0 1.2-2.3-0.2-2.2 0.2-1.9 0.6-1.3 1 1.9 3.6 0.9 4.7-0.6 4.1-4.3 2.4-0.3 1.8 0.6 2.1 1.2 2 0.4 2-1.8 1.7-4.5 2.6-5 5.8-0.2 2.3 0.3 5-0.8 2-1 1.6-0.6 2.3-0.3 4.6-0.4 1.2-0.7 0.9-0.4 1 0.7 1.2 0.2 0.2-0.8 0-8-1.3-13.4-7.9-2.7 0.6-1.7 4.3-3.5 3.3-4.7 0-6-2.3-10.8-2.8-4.7-2.2-1.8-1.5-4.2-3.4-3.6 0-3.4 1.7-2.8 0.4-2.7-1.8-3.2-1.9-3.5-0.8-1.1-2.6 0.5-4-2.6-0.8 3.1-7.5 10.1-10.2 2.7-4.2-0.4-3.2 1-3.4 1.7-4.7z"
+			name="宜蘭縣">
+  </path>
+  <path id="TWNWT" class="map-region" data-name="新北市"
+			d="M754.1 381.6l-1.8-4-6.4-6-1-4.1-0.6-3.7 2.3-2.7 1-3.8-6-8.9-3.7-1.4-5.3 0.3-3.7-2.1 1-4.8-0.8-3.7-3.8-3.7-0.8-3.7 0.8-4.1-0.2-4.5 2.7-2.9 9.4-2.8 2.4-2.5 0.7-3-0.3-2.9-3.7-5.4-3.1-1.6-2.9-0.7-2.3-2.1-3.4-2.2-4.6-2.2-3-3.3 8.1-1.5 3.4-1.3 4.5-3.7 1.3-0.7 1.6-0.3 2.2 0 2.6 0.8 1.3 1.9 0.9 2 1.1 1.1 2.5-1-2.6-4.1-4.2-4.2-2.2-1.4 0.7-1.9 1.3-1.1 1.3-0.7 0.6-0.6 1.5-3.8 2.3-4.2 4.7-4.3 7-3.5 7.9-1.8 7.8 0.9 3.2 2.5 7.3 10.1 2.5 5.4 0.9-0.3 1.9-0.6 2.3-0.2 1.5 0.4-0.1 0.7-0.7 0.9-0.7 1.3 0 1.5 0.8 0.9 1.6 1.2-3.1 2.1-5.2 2.3-2.3 1.5 0.4 2.1 2.1 2.7 1.2 2.5 2.1 2.5 2.6 2.5 2.2 1.6 7.6 3.1 3.7 0.5 2.9-1.1 1.8-1.3 0.3-1.8-2.7-2.8-0.1-2.2 0.2-8.6 24.9 6.1 2.4 1.5-1.2 2.6-0.3 2.1 0.5 3.8 1.7 6.2 1.9 3 1.6 0.7 5-0.8 2.6 0.3 3 0.8 2.7 1.3 1.5 1.9-6.3 3.1-0.6-0.8-2.4-1.4-4.3 0.9-6 3.2-2.6 1.8-8.1 1.6-1 2.2 1.8 2.5-1.2 2.8-3.3 2.1-2.5 0.9-2.7 1.4-2.3 2.9-2.3 3.7-3.6 2.6-4.5 1.3-9.7 5.9-9.4 3.8-2.7 1.6-3.4 2.9-1.4 3.6 0.1 3 0.7 2.3 0.3 1.4-2.8 2-4.8 2.3-3.6 2.5-2.7 2.4-3.5 1.3-4.2 1.2z m22.7-60.5l3-1.2 5.5-7 1.4-3-2.7-2.3-3.3-1.9-0.1-3.6 1.1-4.8-1.1-3.2-2.8-2.5-1.8-7.2-1.2-2.6-1.1-2.4-0.3-2.4 0.4-2.6-1.5-1.6-2.8-0.9-2.9 1.4-2.1 1.8-7.8 4.7-2.6 2.9-1.5 3.3-1.3 1.7-1.2 2.1 2.7 3.1 4.2 4 0.8 4.5-1.1 5.3 2.9 4.9 4.1 3.2 2.8 3.2 2.6 2.3 3.5 0.8 4.2 0z"
+			name="新北市">
+  </path>
+  <path id="TWKEE" class="map-region" data-name="基隆市"
+			d="M806.8 285.1l-0.2 8.6 0.1 2.2 2.7 2.8-0.3 1.8-1.8 1.3-2.9 1.1-3.7-0.5-7.6-3.1-2.2-1.6-2.6-2.5-2.1-2.5-1.2-2.5-2.1-2.7-0.4-2.1 2.3-1.5 5.2-2.3 3.1-2.1 1.1 0.7 0.5 0.8 1.2 1.1 2.8 1.1 8.1 1.9z"
+			name="基隆市">
+  </path>
+  <path id="TWNAN" class="map-region" data-name="南投縣"
+			d="M599.5 519.1l3 0.1 13 1.8 3-0.5 3.6-3.4 5.4-10.4 2.7-6.1 4.6-2.2 7.3 1.1 4.3-0.2 4.2-5.5 2.2-1.4 6.4 4.8 2.5-0.7 1.9-3.9 3.4-2.8 4.8 0.1 3.6-1.4 5.7-5.5 3.6-2.1 3.2-0.6 6.4-3.3 4.4-0.2 4.5-0.7 8-3.2 3.4-0.2 3.4 0.8 9.6 0.9 1 4.5 0.2 2.6-3.8 1.7-4.7 1.6-2.7 2.1 0.2 7.2 2 2.2 3.8 2.4 1 3.3-0.1 2.7-5.8 7.6-3.7 7.7-1.7 5.5 1.5 2.4 1.3 3.2-0.5 5.4-1.1 7.2-2.2 6.3-2.8 6.1-1.8 5.1-0.1 2.7-4.1 6.8 1.5 2.9 2.3 2.9 0.8 3.9 0.7 5.2-0.9 6-2.3 9.1-1.1 3.6-3.3 2.3-5.5 2-2.8 3.7-1 6.2-3.8 3.4-5.3 0.2-5.4 1.2-3.7 2.7-1.1 3-1.1 1.9 1.2 4.4-2.2 2.1-4.3 2.5-0.5-1.5-3-4.2-4.2-1.6-3.2-0.7-0.6-0.2-18.4-0.1-5.5-1-0.8-2.8-0.3-4.2-1.9-4.7-0.9-3.4 2.1-3.7 0.3-3.8-3.7-2.1-3-0.8-4.8-1.9-4.4-0.5-1.9-2.5-6 0.6-4.9 1.5-4.2-1.8-2.8-3.4 0.7-4.2 1.3-3.7-0.7-5.5 0.7-5.2 1.5-3.4-1.4-5.2 1.7-1.1 1.8-1.7 2.8-1.1 0.7-2.5-4.1-2.1-2.8-1-2.6-2.4-1.5-4.5 0.7-9.7 0.8-4.7 0.1-4.1 1.2-3.9 1.4-3.3-0.4-2.9 0.9-2.1 3.1-1.1 0-2.6z"
+			name="南投縣">
+  </path>
+  <path id="TWTPE" class="map-region" data-name="台北市"
+			d="M776.8 321.1l-4.2 0-3.5-0.8-2.6-2.3-2.8-3.2-4.1-3.2-2.9-4.9 1.1-5.3-0.8-4.5-4.2-4-2.7-3.1 1.2-2.1 1.3-1.7 1.5-3.3 2.6-2.9 7.8-4.7 2.1-1.8 2.9-1.4 2.8 0.9 1.5 1.6-0.4 2.6 0.3 2.4 1.1 2.4 1.2 2.6 1.8 7.2 2.8 2.5 1.1 3.2-1.1 4.8 0.1 3.6 3.3 1.9 2.7 2.3-1.4 3-5.5 7-3 1.2z"
+			name="台北市">
+  </path>
+  <path id="TWCYI" class="map-region" data-name="嘉義市"
+			d="M559.2 638.1l-5.3-1.2-5.1-3.3-4.4-1.7-0.6-4.1 2.7-2.9 6.7-1.2 5.7-0.5 4 1.5 3 1.6 1.7 2.9 1.9 4.9-2.2 1.6-3.2 0.4-4.9 2z"
+			name="嘉義市">
+  </path>
+ </g>
+ <g id="points">
+  <circle class="22.123479637643072|118.46584311825282" cx="182.2"
+			cy="909.8" id="0">
+  </circle>
+  <circle class="23.874448427495835|120.32875816495206" cx="535.3"
+			cy="549.3" id="1">
+  </circle>
+  <circle class="26.06315941481179|121.81909020231146" cx="817.8"
+			cy="91.7" id="2">
+  </circle>
+ </g>
+ <g id="label_points">
+  <circle class="Kinmen" cx="153.8" cy="422.9" id="TWKIN">
+  </circle>
+  <circle class="Matsu Islands" cx="472.2" cy="56.8" id="TWLIE">
+  </circle>
+  <circle class="Penghu" cx="396" cy="612.1" id="TWPEN">
+  </circle>
+  <circle class="Taoyuan" cx="703.6" cy="320.4" id="TWTAO">
+  </circle>
+  <circle class="Hsinchu" cx="693.7" cy="378.3" id="TWHSQ">
+  </circle>
+  <circle class="Hsinchu City" cx="652.4" cy="360.1" id="TWHSZ">
+  </circle>
+  <circle class="Miaoli" cx="640.8" cy="418.8" id="TWMIA">
+  </circle>
+  <circle class="Taichung City" cx="604.9" cy="482.7" id="TWTXG">
+  </circle>
+  <circle class="Changhua" cx="565" cy="532.6" id="TWCHA">
+  </circle>
+  <circle class="Yunlin" cx="542.6" cy="581.1" id="TWYUN">
+  </circle>
+  <circle class="Chiayi" cx="598.2" cy="640.2" id="TWCYQ">
+  </circle>
+  <circle class="Tainan City" cx="536.2" cy="699.7" id="TWTNN">
+  </circle>
+  <circle class="Kaohsiung City" cx="605.1" cy="724.8" id="TWKHH">
+  </circle>
+  <circle class="Pingtung" cx="585.7" cy="821.9" id="TWPIF">
+  </circle>
+  <circle class="Taitung" cx="675.1" cy="732.1" id="TWTTT">
+  </circle>
+  <circle class="Hualien" cx="739" cy="565" id="TWHUA">
+  </circle>
+  <circle class="Yilan" cx="783.8" cy="406.8" id="TWILA">
+  </circle>
+  <circle class="New Taipei City" cx="763.3" cy="342.8" id="TWNWT">
+  </circle>
+  <circle class="Keelung City" cx="796.7" cy="291.6" id="TWKEE">
+  </circle>
+  <circle class="Nantou" cx="658.6" cy="552" id="TWNAN">
+  </circle>
+  <circle class="Taipei City" cx="768.5" cy="297.9" id="TWTPE">
+  </circle>
+  <circle class="Chiayi City" cx="556.7" cy="630.5" id="TWCYI">
+  </circle>
+ </g>
+</svg>
+
+
+
+	<script>
+// 美食資料
+const foodData = {
+  TWTPE: [
+    { name: "豆漿蛋餅", img: "https://cc.tvbs.com.tw/img/program/upload/2021/03/25/20210325163902-e140644c.jpg", description: "美味", category: "早餐" },
+    { name: "蚵仔麵線", img: "https://cc.tvbs.com.tw/img/program/upload/2023/11/23/20231123020142-7c188538.jpg", description: "經典小吃", category: "小吃" },
+  ],
+  TWTAO: [
+    { name: "桃園牛肉麵", img: "https://cc.tvbs.com.tw/img/program/upload/2022/09/28/20220928152749-86f0895d.jpg", description: "人氣必吃", category: "午餐,晚餐" },
+    { name: "中壢夜市地瓜球", img: "https://today-obs.line-scdn.net/0hCCx1A11kHGxFSA8YSDFjO30eEB12LgZlZ3xUXmAcFQ9uZAs9KylPDzBNFkA7cQs_ZSdUX2ZJF1VselszKQ/w1200", description: "酥脆Q彈甜點", category: "甜點" }
+  ],
+  TWHSZ: [
+    { name: "新竹貢丸", img: "https://img.ltn.com.tw/Upload/food/page/2016/09/09/160909-3270-0-pga3m.jpg", description: "彈牙多汁小吃", category: "小吃" }
+  ],
+  TWNWT: [
+    { name: "三峽牛角麵包", img: "https://treatrip.com/wp-content/uploads/newtaipeicity051-1024x695.jpg", description: "兩邊的角角好吃甜點", category: "甜點" }
+  ],
+  TWPIF: [
+    { name: "劉記早點", img: "https://i0.wp.com/realplay.tw/wp-content/uploads/2024/04/095805.jpg", description: "小籠包必吃", category: "早餐" },
+    { name: "李家肉圓", img: "https://i0.wp.com/realplay.tw/wp-content/uploads/2024/03/142133.jpg", description: "加辣加香菜超好吃", category: "早餐,小吃" }
+  ],
+  TWKIN: [
+    { name: "南塘香蛋", img: "https://itainan.com.tw/wp-content/uploads/20200411161011_42.jpg", description: "小金門必吃", category: "小吃" }
+  ],
+  TWTXG: [
+    { name: "官芝霖大腸包小腸", img: "https://live.staticflickr.com/65535/49337581458_53f78b26fa_c.jpg", description: "逢甲夜市必吃", category: "小吃" }
+  ],
+  TWTTT: [
+    { name: "陳記麻糬", img: "https://cc.tvbs.com.tw/img/program/upload/2022/07/12/20220712111142-87c673e0.jpg", description: "來台東必買", category: "小吃,甜點" }
+  ]
+};
+
+// 大區對照表
+const regionGroups = {
+  north: ['TWTPE', 'TWTAO', 'TWHSZ', 'TWNWT'],
+  central: ['TWNTC', 'TWCHY', 'TWYUN', 'TWMLI', 'TWTXG'],
+  south: ['TWTNN', 'TWKHH', 'TWPIF', 'TWCHN', 'TWWTN'],
+  east: ['TWHUA', 'TITNN', 'TWILN', 'TWTTT'],
+  islands: ['TWKNH', 'TWTTT', 'TWMAC', 'TWKIN']
+};
+
+// 對應顏色
+function getRegionGroup(regionId) {
+  if (regionGroups.north.includes(regionId)) return 'north';
+  if (regionGroups.central.includes(regionId)) return 'central';
+  if (regionGroups.south.includes(regionId)) return 'south';
+  if (regionGroups.east && regionGroups.east.includes(regionId)) return 'east';
+  if (regionGroups.islands.includes(regionId)) return 'islands';
+  return null;
+}
+
+function getGroupColor(group) {
+  switch (group) {
+    case 'north': return '#f8cccc';
+    case 'central': return '#fff4c2';
+    case 'south': return '#cceeff';
+    case 'east': return '#d4fcd4';
+    case 'islands': return '#e0ccff';
+    default: return '#ffffff';
+  }
+}
+
+// 清除地圖高亮
+function clearHighlight() {
+  document.querySelectorAll('.map-region').forEach(r => {
+    r.classList.remove('highlight');
+    r.style.fill = '';
+  });
+}
+
+// 顯示卡片
+function renderCard(item, regionId) {
+  const group = getRegionGroup(regionId);
+  const color = getGroupColor(group);
+  const card = document.createElement('div');
+  card.className = 'card shadow-sm col float-effect';
+  card.style.backgroundColor = color;
+  card.innerHTML = `
+    <img src="${item.img}" alt="${item.name}" class="card-img-top" />
+    <div class="card-body">
+      <h5 class="card-title">${item.name}</h5>
+      <p class="card-text">${item.description}</p>
+    </div>
+  `;
+  return card;
+}
+
+// 地圖事件處理
+const tooltip = document.getElementById('tooltip');
+document.querySelectorAll('.map-region').forEach(region => {
+  region.addEventListener('click', () => {
+    const regionId = region.id;
+    clearHighlight();
+
+    // ✅ 新增這兩行來清空分類與搜尋欄位
+    document.getElementById('category-select').value = '';
+    document.getElementById('search-input').value = '';
+
+    const group = getRegionGroup(regionId);
+    const color = getGroupColor(group);
+    region.style.fill = color;
+
+    document.getElementById('region-select').value = regionId;
+    filterByRegionAndCategory();
+  });
+
+  region.addEventListener('mousemove', (e) => {
+    tooltip.style.display = 'block';
+    tooltip.style.left = e.pageX + 10 + 'px';
+    tooltip.style.top = e.pageY + 10 + 'px';
+    tooltip.textContent = region.getAttribute('name');
+  });
+
+  region.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+  });
+});
+
+// 篩選功能（地區＋分類）
+function filterByRegionAndCategory() {
+  const regionId = document.getElementById('region-select').value;
+  const category = document.getElementById('category-select').value.trim().toLowerCase();
+  const container = document.getElementById('card-container');
+  container.innerHTML = '';
+  clearHighlight();
+
+  if (!regionId && category) {
+    Object.entries(foodData).forEach(([regionKey, items]) => {
+      const group = getRegionGroup(regionKey);
+      const color = getGroupColor(group);
+      const region = document.getElementById(regionKey);
+
+      if (items.some(item => item.category && item.category.toLowerCase().split(',').map(c => c.trim()).includes(category))) {
+        if (region) region.style.fill = color;
+      }
+
+      items.filter(item =>
+        item.category && item.category.toLowerCase().split(',').map(c => c.trim()).includes(category)
+      ).forEach(item => {
+        container.appendChild(renderCard(item, regionKey));
+      });
+    });
+    return;
+  }
+
+  if (!regionId || !foodData[regionId]) return;
+
+  const group = getRegionGroup(regionId);
+  const color = getGroupColor(group);
+  const region = document.getElementById(regionId);
+  if (region) region.style.fill = color;
+
+  let items = foodData[regionId];
+  if (category) {
+    items = items.filter(item =>
+      item.category && item.category.toLowerCase().split(',').map(c => c.trim()).includes(category)
+    );
+  }
+
+  items.forEach(item => {
+    container.appendChild(renderCard(item, regionId));
+  });
+}
+
+// 關鍵字搜尋
+document.getElementById('search-input').addEventListener('input', e => {
+  const kw = e.target.value.trim().toLowerCase();
+  const container = document.getElementById('card-container');
+  container.innerHTML = '';
+  clearHighlight();
+  if (!kw) return;
+
+  Object.entries(foodData).forEach(([regionId, items]) => {
+    const regionEl = document.getElementById(regionId);
+    const group = getRegionGroup(regionId);
+    const color = getGroupColor(group);
+
+    const matched = items.filter(i =>
+      i.name.toLowerCase().includes(kw) ||
+      i.description.toLowerCase().includes(kw) ||
+      (i.category && i.category.toLowerCase().split(',').map(c => c.trim()).includes(kw))
+    );
+
+    if (matched.length > 0 && regionEl) {
+      regionEl.style.fill = color;
+      matched.forEach(item => {
+        container.appendChild(renderCard(item, regionId));
+      });
+    }
+  });
+});
+
+// 清空按鈕
+document.getElementById('reset-btn').addEventListener('click', () => {
+  document.getElementById('search-input').value = '';
+  document.getElementById('region-select').value = '';
+  document.getElementById('category-select').value = '';
+  clearHighlight();
+  document.getElementById('card-container').innerHTML = '';
+});
+
+// 下拉選單觸發
+document.getElementById('region-select').addEventListener('change', filterByRegionAndCategory);
+document.getElementById('category-select').addEventListener('change', filterByRegionAndCategory);
+</script>
+	
+
+
+
+
+
+</body>
+</html>
