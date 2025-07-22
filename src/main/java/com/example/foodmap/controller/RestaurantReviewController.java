@@ -1,22 +1,29 @@
 package com.example.foodmap.controller;
 
-import com.example.foodmap.dao.RestaurantReviewDao;
 import com.example.foodmap.model.RestaurantReview;
+import com.example.foodmap.service.RestaurantReviewService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/reviews")
+@RequestMapping("/reviews")
 public class RestaurantReviewController {
 
-    private final RestaurantReviewDao reviewDao = new RestaurantReviewDao();
+    @Autowired
+    private RestaurantReviewService reviewService;
 
     @PostMapping
-    public String addReview(@RequestBody RestaurantReview review) {
-        if (review.getRestaurantId() == null || review.getMemberId() == null || review.getRating() < 1 || review.getRating() > 5) {
-            return "Invalid input";
-        }
+    public ResponseEntity<RestaurantReview> createReview(@RequestBody RestaurantReview review) {
+        RestaurantReview savedReview = reviewService.insertReview(review);
+        return new ResponseEntity<>(savedReview, HttpStatus.CREATED);
+    }
 
-        reviewDao.insertReview(review);
-        return "Review added successfully";
+    @GetMapping("/{restaurantId}")
+    public List<RestaurantReview> getReviews(@PathVariable Long restaurantId) {
+        return reviewService.getReviewsByRestaurantId(restaurantId);
     }
 }
