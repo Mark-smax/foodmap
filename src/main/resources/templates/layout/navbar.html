@@ -38,6 +38,14 @@
          <li class="nav-item">
           <a class="nav-link" th:href="@{/attr/show}">景點</a>
         </li>
+        <li class="nav-item" th:if="!${session.loginMemberName}"><a
+						class="nav-link" th:href="@{/member/add}">大專註冊</a></li>
+
+					<li class="nav-item" th:if="${session.loginMemberName}"><a
+						class="nav-link" th:href="@{/member/detail}">大專我的資訊</a></li>
+
+					<li class="nav-item" th:if="!${session.loginMemberName}"><a
+						class="nav-link" th:href="@{/member/login}">大專登入</a></li>
       <li class="nav-item">
   <a class="nav-link" th:href="@{/foodmap.html}">美食地圖</a>
 </li>

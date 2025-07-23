@@ -76,15 +76,15 @@ public class UsersController {
 		return "users/loginView";
 	}
 	
-	@GetMapping("/logout")
-	public String logout(HttpSession httpSession) {
-		
-		httpSession.removeAttribute("loginUserId");
-		httpSession.removeAttribute("loginUsername");
-		
-		
-		return "redirect:/";
-	}
+//	@GetMapping("/logout")
+//	public String logout(HttpSession httpSession) {
+//		
+//		httpSession.removeAttribute("loginUserId");
+//		httpSession.removeAttribute("loginUsername");
+//		
+//		
+//		return "redirect:/";
+//	}
 	
 	
 	@GetMapping("/users/detail")

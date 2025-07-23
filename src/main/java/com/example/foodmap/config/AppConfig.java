@@ -1,16 +1,36 @@
 package com.example.foodmap.config;
 
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.example.foodmap.member.domain.Member;
+import com.example.foodmap.member.domain.MemberRepository;
 import com.example.foodmap.model.Phone;
+
+import jakarta.annotation.PostConstruct;
 
 
 @Configuration
 public class AppConfig {
+	@Autowired
+    private MemberRepository memberRepo;
+	
+	@PostConstruct
+	public  void viod() {
+		if (!memberRepo.existsByMemberEmail("admin@mail")) {
+			Member member = new Member();
+			member.setMemberName("admin1");
+			member.setMemberEmail("admin@mail");
+			member.setMemberPassword("admin");
+			member.setMemberRole("admin");
+			member.setMemberStatus("正常");
+			memberRepo.save(member);
+		}
+	} 
 	
 	@Bean
 	PasswordEncoder passwordEncoder() {
