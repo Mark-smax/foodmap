@@ -1,12 +1,19 @@
 package com.example.foodmap.controller;
 
+import com.example.foodmap.dto.RestaurantDetailsDTO;
+import com.example.foodmap.model.Restaurant;
+import com.example.foodmap.model.RestaurantPhoto;
+import com.example.foodmap.model.RestaurantReview;
+import com.example.foodmap.service.RestaurantService;
+import com.example.foodmap.repository.RestaurantFavoriteRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.service.RestaurantService;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/restaurants")
@@ -14,6 +21,9 @@ import com.example.foodmap.service.RestaurantService;
 public class RestaurantController {
 
     private final RestaurantService service;
+
+    @Autowired
+    private RestaurantFavoriteRepository favoriteRepository;
 
     public RestaurantController(RestaurantService service) {
         this.service = service;
@@ -66,5 +76,20 @@ public class RestaurantController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.deleteRestaurant(id);
+    }
+
+    // GET 取得餐廳詳細資訊（圖片、評論、是否已收藏）
+    @GetMapping("/{id}/details")
+    public RestaurantDetailsDTO getRestaurantDetails(@PathVariable("id") Long restaurantId,
+                                                     @RequestParam(value = "memberId", required = false) Long memberId) {
+        Restaurant restaurant = service.getRestaurantById(restaurantId);
+        List<RestaurantPhoto> photos = service.getPhotosByRestaurantId(restaurantId);
+        List<RestaurantReview> reviews = service.getReviewsByRestaurantId(restaurantId);
+        boolean isFavorite = false;
+        if (memberId != null) {
+            isFavorite = favoriteRepository.isFavorite(restaurantId, memberId);
+        }
+
+        return new RestaurantDetailsDTO(restaurant, photos, reviews, isFavorite);
     }
 }

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>美食詳情</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    .star {
+      color: gold;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-4">
+    <h1 id="name"></h1>
+    <p><strong>電話：</strong><span id="phone"></span></p>
+    <p><strong>地址：</strong><span id="address"></span></p>
+
+    <div id="photos" class="mb-3"></div>
+
+    <div id="map" style="height: 300px;" class="mb-4"></div>
+
+    <div>
+      <h4>平均評分：<span id="avgRating"></span> 顆星</h4>
+    </div>
+
+    <button id="favoriteBtn" class="btn btn-outline-danger mb-4">❤️ 收藏</button>
+
+    <div>
+      <h4>留言評論</h4>
+      <ul id="reviews" class="list-group"></ul>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
+    $(document).ready(function() {
+      fetch(`/api/restaurant/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          $('#name').text(data.name);
+          $('#phone').text(data.phone);
+          $('#address').text(data.address);
+          $('#avgRating').text(data.avgRating.toFixed(1));
+
+          // 照片
+          data.images.forEach(img => {
+            $('#photos').append(`<img src="${img}" class="img-thumbnail me-2" width="150">`);
+          });
+
+          // 地圖
+          $('#map').html(`<iframe width="100%" height="100%" 
+            src="https://www.google.com/maps?q=${encodeURIComponent(data.address)}&output=embed" 
+            frameborder="0"></iframe>`);
+
+          // 評論
+          data.reviews.forEach(r => {
+            $('#reviews').append(`
+              <li class="list-group-item">
+                <strong>${r.memberNickname}</strong>（${r.stars}⭐）<br>
+                ${r.comment}<br>
+                <small class="text-muted">${new Date(r.createdTime).toLocaleString()}</small>
+              </li>`);
+          });
+
+          // 收藏狀態
+          if (data.isFavorite !== undefined) {
+            $('#favoriteBtn')
+              .text(data.isFavorite ? '💔 取消收藏' : '❤️ 收藏')
+              .on('click', function () {
+                const action = data.isFavorite ? 'DELETE' : 'POST';
+                fetch(`/api/restaurant/${id}/favorite`, { method: action })
+                  .then(() => location.reload());
+              });
+          } else {
+            $('#favoriteBtn').hide(); // 未登入就隱藏
+          }
+        });
+    });
+  </script>
+</body>
+</html>

@@ -15,7 +15,9 @@ public class Restaurant {
     private String address;
     private String phone;
     private Double rating;
-    private String type;   // 例如小吃、甜點等
+
+    @Column(name = "category") // ⭐ 讓 type 映射到資料庫的 category 欄位
+    private String type;
 
     public Restaurant() {
     }
@@ -29,7 +31,6 @@ public class Restaurant {
         this.type = type;
     }
 
-    // Getter & Setter
     public Long getId() {
         return id;
     }

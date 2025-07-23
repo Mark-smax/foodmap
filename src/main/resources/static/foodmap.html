@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html xmlns:th="http://www.thymeleaf.org/" lang="zh-Hant">
+
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,6 +16,11 @@
 </head>
 
 <body>
+
+<div th:replace="~{layout/navbar} "> 1</div>
+<div th:insert="~{layout/navbar}">這是 navbar 測試區塊</div>
+
+<div class="container">
 	<h1 style="text-align: center;">台灣美食地圖</h1>
 
 
@@ -222,6 +228,7 @@
 
 	<div id="restaurant-list"></div>
 <div id="foodCardContainer"></div>
+</div>
 	<script src="js/foodmap.js"></script>
 
 
