@@ -1,8 +1,6 @@
 const foodData = {
   TWTPE: [
-    { name: "豆漿蛋餅", img: "https://cc.tvbs.com.tw/img/program/upload/2021/03/25/20210325163902-e140644c.jpg", description: "美味", category: "早餐" },
-    { name: "蚵仔麵線線", img: "https://cc.tvbs.com.tw/img/program/upload/2023/11/23/20231123020142-7c188538.jpg", description: "經典小吃", category: "小吃" },
-  ],
+    ],
 };
 
 const regionGroups = {
@@ -50,14 +48,17 @@ function renderCard(item, regionId) {
   card.className = 'card shadow-sm col float-effect';
   card.style.backgroundColor = color;
 
-  // 修改：使用 <a> 包住整個卡片內容
   const link = document.createElement('a');
-  link.href = `/restaurant-detail?id=${item.id}&memberId=101`; // 預設 memberId = 101，可日後用登入帳號取代
+  link.href = `/restaurant-detail?id=${item.id}&memberId=101`;
   link.style.textDecoration = 'none';
-  link.style.color = 'inherit'; // 保留卡片樣式
+  link.style.color = 'inherit';
+
+  const imgSrc = item.thumbnail
+    ? 'data:image/jpeg;base64,' + item.thumbnail
+    : 'https://via.placeholder.com/200x120?text=No+Image';
 
   link.innerHTML = `
-    <img src="${item.img || 'https://via.placeholder.com/200x120?text=No+Image'}" alt="${item.name}" class="card-img-top" />
+    <img src="${imgSrc}" alt="${item.name}" class="card-img-top" />
     <div class="card-body">
       <h5 class="card-title">${item.name}</h5>
       <p class="card-text">${item.description || item.type || ''}</p>

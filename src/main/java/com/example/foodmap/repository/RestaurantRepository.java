@@ -18,6 +18,8 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
     Page<Restaurant> findByCountyAndTypeContainingIgnoreCase(String county, String type, Pageable pageable);
 
+    Page<Restaurant> findByTypeContainingIgnoreCase(String type, Pageable pageable);
+
     Page<Restaurant> findByCounty(String county, Pageable pageable);
 
     @Query("SELECT r FROM Restaurant r WHERE " +

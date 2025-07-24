@@ -15,6 +15,9 @@ public class Restaurant {
     private String address;
     private String phone;
     private Double rating;
+    
+    @Transient
+    private String thumbnail;
 
     @Column(name = "category") // ⭐ 讓 type 映射到資料庫的 category 欄位
     private String type;
@@ -81,5 +84,13 @@ public class Restaurant {
 
     public void setType(String type) {
         this.type = type;
+    }
+    
+    public String getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(String thumbnail) {
+        this.thumbnail = thumbnail;
     }
 }

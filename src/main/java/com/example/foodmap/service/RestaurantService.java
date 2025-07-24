@@ -12,10 +12,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Base64;
-import java.util.stream.Collectors;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 public class RestaurantService {
@@ -36,11 +36,34 @@ public class RestaurantService {
     }
 
     public Page<Restaurant> searchRestaurants(String county, Double minRating, String type, Pageable pageable) {
-        if (type == null || type.trim().isEmpty()) {
-            return restaurantRepository.findByCounty(county, pageable);
-        } else {
-            return restaurantRepository.findByCountyAndRatingGreaterThanEqualAndTypeContainingIgnoreCase(
+        boolean hasCounty = county != null && !county.trim().isEmpty();
+        boolean hasType = type != null && !type.trim().isEmpty();
+
+        Page<Restaurant> page;
+
+        if (hasCounty && hasType) {
+            page = restaurantRepository.findByCountyAndRatingGreaterThanEqualAndTypeContainingIgnoreCase(
                     county, minRating, type, pageable);
+        } else if (hasCounty) {
+            page = restaurantRepository.findByCounty(county, pageable);
+        } else if (hasType) {
+            page = restaurantRepository.findByTypeContainingIgnoreCase(type, pageable);
+        } else {
+            return Page.empty(pageable);
+        }
+
+        // 加入縮圖處理
+        page.forEach(this::setRandomThumbnail);
+
+        return page;
+    }
+
+    private void setRandomThumbnail(Restaurant restaurant) {
+        List<RestaurantPhoto> photos = photoRepository.findTop5ByRestaurantIdOrderByIdAsc(restaurant.getId());
+        if (!photos.isEmpty()) {
+            int randomIndex = new Random().nextInt(photos.size());
+            String randomBase64 = Base64.getEncoder().encodeToString(photos.get(randomIndex).getImage());
+            restaurant.setThumbnail(randomBase64);
         }
     }
 
@@ -48,11 +71,15 @@ public class RestaurantService {
         if (county == null || county.trim().isEmpty() || type == null || type.trim().isEmpty()) {
             return Page.empty(pageable);
         }
-        return restaurantRepository.findByCountyAndTypeContainingIgnoreCase(county, type, pageable);
+        Page<Restaurant> page = restaurantRepository.findByCountyAndTypeContainingIgnoreCase(county, type, pageable);
+        page.forEach(this::setRandomThumbnail);
+        return page;
     }
 
     public Page<Restaurant> searchByKeyword(String keyword, Pageable pageable) {
-        return restaurantRepository.searchByKeyword(keyword, pageable);
+        Page<Restaurant> page = restaurantRepository.searchByKeyword(keyword, pageable);
+        page.forEach(this::setRandomThumbnail);
+        return page;
     }
 
     @Transactional
@@ -92,13 +119,12 @@ public class RestaurantService {
     }
 
     public List<RestaurantReview> getReviewsByRestaurantId(Long id) {
-    	return reviewRepository.findByRestaurantIdOrderByCreatedTimeDesc(id);
+        return reviewRepository.findByRestaurantIdOrderByCreatedTimeDesc(id);
     }
 
     public RestaurantDetailsDTO getRestaurantDetails(Long restaurantId, Long memberId) {
         Restaurant restaurant = getRestaurantById(restaurantId);
-        
-        // 將照片轉為 base64 字串
+
         List<String> base64Photos = getPhotosByRestaurantId(restaurantId).stream()
             .map(photo -> Base64.getEncoder().encodeToString(photo.getImage()))
             .collect(Collectors.toList());
@@ -109,6 +135,5 @@ public class RestaurantService {
             favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
 
         return new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite);
-    
     }
 }
