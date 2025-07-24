@@ -1,20 +1,27 @@
 package com.example.foodmap.service;
 
 import com.example.foodmap.model.Restaurant;
+import com.example.foodmap.model.RestaurantPhoto;
+import com.example.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.repository.RestaurantRepository;
+import com.example.foodmap.repository.RestaurantPhotoRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
+    private final RestaurantPhotoRepository restaurantPhotoRepository;
 
-    public RestaurantService(RestaurantRepository restaurantRepository) {
+    public RestaurantService(RestaurantRepository restaurantRepository,
+                             RestaurantPhotoRepository restaurantPhotoRepository) {
         this.restaurantRepository = restaurantRepository;
+        this.restaurantPhotoRepository = restaurantPhotoRepository;
     }
 
     public Page<Restaurant> searchRestaurants(String county, Double minRating, String type, Pageable pageable) {
@@ -59,5 +66,15 @@ public class RestaurantService {
 
     public void deleteRestaurant(Long id) {
         restaurantRepository.deleteById(id);
+    }
+
+    public RestaurantDetailsDTO getRestaurantDetails(Long restaurantId) {
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(restaurantId);
+        if (optionalRestaurant.isEmpty()) {
+            return null;
+        }
+        Restaurant restaurant = optionalRestaurant.get();
+        List<RestaurantPhoto> photos = restaurantPhotoRepository.findByRestaurantId(restaurantId);
+        return new RestaurantDetailsDTO(restaurant, photos);
     }
 }
