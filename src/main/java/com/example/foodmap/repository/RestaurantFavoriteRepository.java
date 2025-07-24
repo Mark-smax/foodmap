@@ -1,5 +1,10 @@
 package com.example.foodmap.repository;
 
-public interface RestaurantFavoriteRepository {
-    boolean isFavorite(Long restaurantId, Long memberId);
+import com.example.foodmap.model.RestaurantFavorite;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface RestaurantFavoriteRepository extends JpaRepository<RestaurantFavorite, Long> {
+    boolean existsByRestaurantIdAndMemberId(Long restaurantId, Long memberId);
 }

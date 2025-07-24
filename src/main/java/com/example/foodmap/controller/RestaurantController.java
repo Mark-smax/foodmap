@@ -85,11 +85,13 @@ public class RestaurantController {
         Restaurant restaurant = service.getRestaurantById(restaurantId);
         List<RestaurantPhoto> photos = service.getPhotosByRestaurantId(restaurantId);
         List<RestaurantReview> reviews = service.getReviewsByRestaurantId(restaurantId);
+        
         boolean isFavorite = false;
         if (memberId != null) {
-            isFavorite = favoriteRepository.isFavorite(restaurantId, memberId);
+            isFavorite = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
         }
 
         return new RestaurantDetailsDTO(restaurant, photos, reviews, isFavorite);
     }
+
 }

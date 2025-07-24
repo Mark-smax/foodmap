@@ -2,12 +2,18 @@ package com.example.foodmap.service;
 
 import com.example.foodmap.model.Restaurant;
 import com.example.foodmap.model.RestaurantPhoto;
+import com.example.foodmap.model.Review;
+import com.example.foodmap.model.RestaurantFavorite;
 import com.example.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.repository.RestaurantRepository;
 import com.example.foodmap.repository.RestaurantPhotoRepository;
+import com.example.foodmap.repository.ReviewRepository;
+import com.example.foodmap.repository.RestaurantFavoriteRepository;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,11 +23,17 @@ public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
     private final RestaurantPhotoRepository restaurantPhotoRepository;
+    private final ReviewRepository reviewRepository;
+    private final RestaurantFavoriteRepository restaurantFavoriteRepository;
 
     public RestaurantService(RestaurantRepository restaurantRepository,
-                             RestaurantPhotoRepository restaurantPhotoRepository) {
+                             RestaurantPhotoRepository restaurantPhotoRepository,
+                             ReviewRepository reviewRepository,
+                             RestaurantFavoriteRepository restaurantFavoriteRepository) {
         this.restaurantRepository = restaurantRepository;
         this.restaurantPhotoRepository = restaurantPhotoRepository;
+        this.reviewRepository = reviewRepository;
+        this.restaurantFavoriteRepository = restaurantFavoriteRepository;
     }
 
     public Page<Restaurant> searchRestaurants(String county, Double minRating, String type, Pageable pageable) {
@@ -44,10 +56,12 @@ public class RestaurantService {
         return restaurantRepository.searchByKeyword(keyword, pageable);
     }
 
+    @Transactional
     public Restaurant createRestaurant(Restaurant restaurant) {
         return restaurantRepository.save(restaurant);
     }
 
+    @Transactional
     public Restaurant updateRestaurant(Long id, Restaurant updated) {
         Optional<Restaurant> optional = restaurantRepository.findById(id);
         if (optional.isPresent()) {
@@ -64,17 +78,20 @@ public class RestaurantService {
         }
     }
 
+    @Transactional
     public void deleteRestaurant(Long id) {
         restaurantRepository.deleteById(id);
     }
 
-    public RestaurantDetailsDTO getRestaurantDetails(Long restaurantId) {
+    public RestaurantDetailsDTO getRestaurantDetails(Long restaurantId, Long memberId) {
         Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(restaurantId);
         if (optionalRestaurant.isEmpty()) {
             return null;
         }
         Restaurant restaurant = optionalRestaurant.get();
-        List<RestaurantPhoto> photos = restaurantPhotoRepository.findByRestaurantId(restaurantId);
-        return new RestaurantDetailsDTO(restaurant, photos);
+        List<RestaurantPhoto> photos = restaurantPhotoRepository.findTop5ByRestaurantIdOrderByIdAsc(restaurantId);
+        List<Review> reviews = reviewRepository.findByRestaurantId(restaurantId);
+        boolean isFavorite = restaurantFavoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
+        return new RestaurantDetailsDTO(restaurant, photos, reviews, isFavorite);
     }
 }

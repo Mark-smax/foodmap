@@ -14,18 +14,16 @@ public class RestaurantPhoto {
     private Long restaurantId;
 
     @Lob
-    @Column(name = "image")
+    @Column(name = "image", columnDefinition = "VARBINARY(MAX)")
     private byte[] image;
 
-    public RestaurantPhoto() {}
-
-    public RestaurantPhoto(Long restaurantId, byte[] image) {
-        this.restaurantId = restaurantId;
-        this.image = image;
-    }
-
+    // Getter 和 Setter
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getRestaurantId() {

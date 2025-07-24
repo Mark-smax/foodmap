@@ -11,9 +11,10 @@ public class PageController {
 		return "index.html";
 	}
 	
-	@GetMapping("/about")
-	public String about() {
-		return "aboutPage.html";
+	
+	@GetMapping("/foodmap")
+	public String foodmap() {
+		return "foodmap.html";
 	}
 	
 }
