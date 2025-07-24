@@ -10,20 +10,13 @@ public class RestaurantFavorite {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "restaurant_id", nullable = false)
+    @Column(name = "restaurant_id")
     private Long restaurantId;
 
-    @Column(name = "member_id", nullable = false)
+    @Column(name = "member_id")
     private Long memberId;
 
-    // 建構子、Getter/Setter
-    public RestaurantFavorite() {}
-
-    public RestaurantFavorite(Long restaurantId, Long memberId) {
-        this.restaurantId = restaurantId;
-        this.memberId = memberId;
-    }
-
+    // Getters & Setters
     public Long getId() {
         return id;
     }
