@@ -45,10 +45,18 @@ function clearHighlight() {
 function renderCard(item, regionId) {
   const group = getRegionGroup(regionId);
   const color = getGroupColor(group);
+
   const card = document.createElement('div');
   card.className = 'card shadow-sm col float-effect';
   card.style.backgroundColor = color;
-  card.innerHTML = `
+
+  // 修改：使用 <a> 包住整個卡片內容
+  const link = document.createElement('a');
+  link.href = `/restaurant-detail?id=${item.id}&memberId=101`; // 預設 memberId = 101，可日後用登入帳號取代
+  link.style.textDecoration = 'none';
+  link.style.color = 'inherit'; // 保留卡片樣式
+
+  link.innerHTML = `
     <img src="${item.img || 'https://via.placeholder.com/200x120?text=No+Image'}" alt="${item.name}" class="card-img-top" />
     <div class="card-body">
       <h5 class="card-title">${item.name}</h5>
@@ -58,6 +66,8 @@ function renderCard(item, regionId) {
       ${item.rating ? `<p class="card-text">⭐ 評分：${item.rating}</p>` : ''}
     </div>
   `;
+
+  card.appendChild(link);
   return card;
 }
 

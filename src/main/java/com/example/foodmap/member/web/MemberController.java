@@ -93,7 +93,7 @@ public class MemberController {
 		switch (result.getMemberRole()) {
 		case "admin": {
 			// 重新導向後台
-			return "redirect:/admin";
+			return "redirect:/";
 		}
 		case "一般": {
 			// 重新導向首頁
@@ -115,7 +115,13 @@ public class MemberController {
 
 	@GetMapping("/logout")
 	public String logout(HttpSession httpSession) {
-
+		
+		String role =(String)httpSession.getAttribute("loginMemberRoles");
+		if(role == "admin") {
+			
+		}
+		System.out.println(role);
+		
 		httpSession.removeAttribute("loginMemberId");
 		httpSession.removeAttribute("loginMemberName");
 		httpSession.removeAttribute("loginMemberRoles");
