@@ -17,6 +17,10 @@
   </style>
 </head>
 <body class="container py-4">
+	<div th:replace="~{layout/navbar}"></div>
+
+
+	<div class="container"></div>
   <h1 class="mb-3" th:text="${restaurant.name}">餐廳名稱</h1>
   <p><strong>地址：</strong><span th:text="${restaurant.address}">地址</span></p>
   <p><strong>電話：</strong><span th:text="${restaurant.phone}">電話</span></p>
