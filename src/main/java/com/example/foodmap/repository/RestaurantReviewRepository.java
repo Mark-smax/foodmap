@@ -8,5 +8,8 @@ import java.util.List;
 
 @Repository
 public interface RestaurantReviewRepository extends JpaRepository<RestaurantReview, Long> {
-    List<RestaurantReview> findByRestaurantId(Long restaurantId);
+
+    List<RestaurantReview> findByRestaurantId(Long restaurantId); // 🔺 這是你 RestaurantService 用的
+
+    List<RestaurantReview> findByRestaurantIdOrderByCreatedTimeDesc(Long restaurantId); // 🔺 這是 ReviewService 用的
 }

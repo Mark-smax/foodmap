@@ -2,18 +2,12 @@ package com.example.foodmap.controller;
 
 import com.example.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.model.RestaurantPhoto;
-import com.example.foodmap.model.RestaurantReview;
 import com.example.foodmap.service.RestaurantService;
-import com.example.foodmap.repository.RestaurantFavoriteRepository;
 
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/restaurants")
@@ -21,31 +15,42 @@ import java.util.List;
 public class RestaurantController {
 
     private final RestaurantService service;
-    private final RestaurantFavoriteRepository favoriteRepository;
 
-    @Autowired
-    public RestaurantController(RestaurantService service,
-                                RestaurantFavoriteRepository favoriteRepository) {
+    public RestaurantController(RestaurantService service) {
         this.service = service;
-        this.favoriteRepository = favoriteRepository;
     }
 
     @GetMapping
-    public Page<Restaurant> search(...) { /* 原本程式不動領 */ }
+    public Page<Restaurant> search(
+            @RequestParam(required = false) String county,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "rating") String sortBy,
+            @RequestParam(defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "0") Double minRating,
+            @RequestParam(defaultValue = "") String type) {
 
-    // 詳細頁 API
+        Sort.Direction direction = order.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return service.searchByKeyword(keyword.trim(), pageRequest);
+        }
+
+        if (county != null && !county.trim().isEmpty() &&
+            type != null && !type.trim().isEmpty() &&
+            (minRating == null || minRating == 0)) {
+            return service.searchByCountyAndType(county.trim(), type.trim(), pageRequest);
+        }
+
+        return service.searchRestaurants(county, minRating, type, pageRequest);
+    }
+
     @GetMapping("/{id}/details")
     public RestaurantDetailsDTO getRestaurantDetails(
         @PathVariable("id") Long restaurantId,
         @RequestParam(value = "memberId", required = false) Long memberId) {
-
-        Restaurant restaurant = service.getRestaurantById(restaurantId);
-        List<RestaurantPhoto> photos = service.getPhotosByRestaurantId(restaurantId);
-        List<RestaurantReview> reviews = service.getReviewsByRestaurantId(restaurantId);
-
-        boolean isFavorite = (memberId != null) &&
-            favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
-
-        return new RestaurantDetailsDTO(restaurant, photos, reviews, isFavorite);
+        return service.getRestaurantDetails(restaurantId, memberId);
     }
 }

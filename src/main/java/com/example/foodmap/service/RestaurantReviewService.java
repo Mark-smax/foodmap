@@ -20,5 +20,8 @@ public class RestaurantReviewService {
         return reviewRepo.findByRestaurantIdOrderByCreatedTimeDesc(restaurantId);
     }
 
+    public RestaurantReview insertReview(RestaurantReview review) {
+        return reviewRepo.save(review);
+    }
     // 其他 review 相關邏輯...
 }

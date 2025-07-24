@@ -1,20 +1,25 @@
 package com.example.foodmap.dto;
 
 import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.model.RestaurantPhoto;
 import com.example.foodmap.model.RestaurantReview;
 
 import java.util.List;
 
 public class RestaurantDetailsDTO {
+
     private Restaurant restaurant;
-    private List<RestaurantPhoto> photos;
+    private List<String> photoBase64List;
     private List<RestaurantReview> reviews;
     private boolean isFavorite;
 
-    public RestaurantDetailsDTO(Restaurant restaurant, List<RestaurantPhoto> photos, List<RestaurantReview> reviews, boolean isFavorite) {
+    public RestaurantDetailsDTO() {}
+
+    public RestaurantDetailsDTO(Restaurant restaurant,
+                                 List<String> photoBase64List,
+                                 List<RestaurantReview> reviews,
+                                 boolean isFavorite) {
         this.restaurant = restaurant;
-        this.photos = photos;
+        this.photoBase64List = photoBase64List;
         this.reviews = reviews;
         this.isFavorite = isFavorite;
     }
@@ -27,12 +32,12 @@ public class RestaurantDetailsDTO {
         this.restaurant = restaurant;
     }
 
-    public List<RestaurantPhoto> getPhotos() {
-        return photos;
+    public List<String> getPhotoBase64List() {
+        return photoBase64List;
     }
 
-    public void setPhotos(List<RestaurantPhoto> photos) {
-        this.photos = photos;
+    public void setPhotoBase64List(List<String> photoBase64List) {
+        this.photoBase64List = photoBase64List;
     }
 
     public List<RestaurantReview> getReviews() {
