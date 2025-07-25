@@ -34,34 +34,32 @@ public class RestaurantPageController {
                                  HttpSession session,
                                  Model model) {
 
-        // 從 session 中取得登入的會員（若未登入則為 null）
-    	Integer loginMemberIdInt = (Integer) session.getAttribute("loginMemberId");
-    	
-    	Long loginMemberId = loginMemberIdInt.longValue();
+        Integer loginMemberIdInt = (Integer) session.getAttribute("loginMemberId");
+        Long loginMemberId = loginMemberIdInt.longValue();
 
-        // 從 Service 層取得詳細資料
+        Member loginUser = (Member) session.getAttribute("loginUser"); // ⭐ 加這行
+        model.addAttribute("loginUser", loginUser); // ⭐ 加這行
+
         RestaurantDetailsDTO dto = restaurantService.getRestaurantDetails(id, loginMemberId);
 
-        // ✅ 印出評論資訊方便除錯
         List<RestaurantReview> reviews = dto.getReviews();
         System.out.println("取得評論數量：" + reviews.size());
         for (RestaurantReview r : reviews) {
             System.out.println("⭐ " + r.getRating() + " 星，評論：" + r.getComment());
         }
 
-        // 格式化評論時間（yyyy-MM-dd HH:mm）
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         List<String> reviewTimes = reviews.stream()
                 .map(r -> r.getCreatedTime().format(formatter))
                 .collect(Collectors.toList());
 
-        // 傳資料給 view
         model.addAttribute("restaurant", dto.getRestaurant());
         model.addAttribute("photos", dto.getPhotoBase64List());
         model.addAttribute("reviews", reviews);
         model.addAttribute("reviewTimes", reviewTimes);
         model.addAttribute("favorite", dto.isFavorite());
 
-        return "restaurant-detail"; // 對應 resources/templates/restaurant-detail.html
+        return "restaurant-detail";
     }
+
 }

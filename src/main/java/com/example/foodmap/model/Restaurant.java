@@ -18,6 +18,17 @@ public class Restaurant {
     
     @Transient
     private String thumbnail;
+    
+    @Transient // 表示這個欄位不存進資料庫
+    private Double avgRating;
+    
+    public Double getAvgRating() {
+        return avgRating;
+    }
+
+    public void setAvgRating(Double avgRating) {
+        this.avgRating = avgRating;
+    }
 
     @Column(name = "category") // ⭐ 讓 type 映射到資料庫的 category 欄位
     private String type;

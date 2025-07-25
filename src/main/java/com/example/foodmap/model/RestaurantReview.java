@@ -3,6 +3,8 @@ package com.example.foodmap.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import com.example.foodmap.member.domain.Member;
+
 @Entity
 @Table(name = "restaurant_review")
 public class RestaurantReview {
@@ -22,6 +24,14 @@ public class RestaurantReview {
 
     @Column(name = "created_time")
     private LocalDateTime createdTime;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", insertable = false, updatable = false)
+    private Member member;
+    
+    public Member getMember() {
+        return member;
+    }
 
 	public Long getId() {
 		return id;

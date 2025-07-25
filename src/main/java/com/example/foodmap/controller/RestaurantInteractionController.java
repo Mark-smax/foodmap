@@ -1,8 +1,8 @@
 package com.example.foodmap.controller;
 
 import com.example.foodmap.model.RestaurantReview;
-import com.example.foodmap.model.RestaurantFavorite;
 import com.example.foodmap.member.domain.Member;
+import com.example.foodmap.repository.RestaurantReviewRepository;
 import com.example.foodmap.service.RestaurantService;
 
 import jakarta.servlet.http.HttpSession;
@@ -18,12 +18,15 @@ import java.time.LocalDateTime;
 public class RestaurantInteractionController {
 
     private final RestaurantService restaurantService;
+    private final RestaurantReviewRepository reviewRepository;
 
-    public RestaurantInteractionController(RestaurantService restaurantService) {
+    public RestaurantInteractionController(RestaurantService restaurantService,
+                                           RestaurantReviewRepository reviewRepository) {
         this.restaurantService = restaurantService;
+        this.reviewRepository = reviewRepository;
     }
 
-    // ⭐ 評論提交
+    // ⭐ 發表評論
     @PostMapping("/review")
     public String postReview(@RequestParam Long restaurantId,
                              @RequestParam int rating,
@@ -31,16 +34,13 @@ public class RestaurantInteractionController {
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
 
-    	Integer loginMemberIdInt = (Integer) session.getAttribute("loginMemberId");
-    	
-    	if (loginMemberIdInt == null) {
+        Integer loginMemberIdInt = (Integer) session.getAttribute("loginMemberId");
+        if (loginMemberIdInt == null) {
             redirectAttributes.addFlashAttribute("error", "請先登入再評論！");
             return "redirect:/restaurant-detail?id=" + restaurantId;
         }
-    	
-    	Long loginMemberId = loginMemberIdInt.longValue();
-    	
-        
+
+        Long loginMemberId = loginMemberIdInt.longValue();
 
         if (rating < 1 || rating > 5 || comment.trim().isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "評論內容與星等必填！");
@@ -61,7 +61,7 @@ public class RestaurantInteractionController {
         return "redirect:/restaurant-detail?id=" + restaurantId;
     }
 
-    // ❤️ 收藏 / 取消
+    // ❤️ 收藏 / 取消收藏
     @PostMapping("/favorite")
     public String toggleFavorite(@RequestParam Long restaurantId,
                                  HttpSession session,
@@ -74,11 +74,63 @@ public class RestaurantInteractionController {
         }
 
         Long memberId = loginUser.getMemberId().longValue();
-
         restaurantService.toggleFavorite(restaurantId, memberId);
 
         return "redirect:/restaurant-detail?id=" + restaurantId;
     }
-    
-    
+
+    // ✏️ 編輯評論
+    @PostMapping("/review/edit")
+    public String editReview(@RequestParam Long reviewId,
+                             @RequestParam int rating,
+                             @RequestParam String comment,
+                             HttpSession session,
+                             RedirectAttributes redirectAttributes) {
+
+        Member loginUser = (Member) session.getAttribute("loginUser");
+        if (loginUser == null) {
+            redirectAttributes.addFlashAttribute("error", "請先登入才能編輯評論！");
+            return "redirect:/";
+        }
+
+        Long memberId = loginUser.getMemberId().longValue();
+        RestaurantReview review = reviewRepository.findByIdAndMemberId(reviewId, memberId);
+
+        if (review == null) {
+            redirectAttributes.addFlashAttribute("error", "無權編輯此評論！");
+            return "redirect:/";
+        }
+
+        review.setRating(rating);
+        review.setComment(comment.trim());
+        review.setCreatedTime(LocalDateTime.now());
+
+        reviewRepository.save(review);
+
+        return "redirect:/restaurant-detail?id=" + review.getRestaurantId();
+    }
+
+    // 🗑️ 刪除評論
+    @PostMapping("/review/delete")
+    public String deleteReview(@RequestParam Long reviewId,
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) {
+
+        Member loginUser = (Member) session.getAttribute("loginUser");
+        if (loginUser == null) {
+            redirectAttributes.addFlashAttribute("error", "請先登入才能刪除評論！");
+            return "redirect:/";
+        }
+
+        Long memberId = loginUser.getMemberId().longValue();
+        RestaurantReview review = reviewRepository.findByIdAndMemberId(reviewId, memberId);
+
+        if (review == null) {
+            redirectAttributes.addFlashAttribute("error", "無權刪除此評論！");
+            return "redirect:/";
+        }
+
+        reviewRepository.deleteById(reviewId);
+        return "redirect:/restaurant-detail?id=" + review.getRestaurantId();
+    }
 }

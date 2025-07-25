@@ -57,6 +57,10 @@ function renderCard(item, regionId) {
     ? 'data:image/jpeg;base64,' + item.thumbnail
     : 'https://via.placeholder.com/200x120?text=No+Image';
 
+  const ratingText = (item.avgRating !== undefined && item.avgRating !== null)
+    ? `<p class="card-text">⭐ 平均：${item.avgRating} 分</p>`
+    : '';
+
   link.innerHTML = `
     <img src="${imgSrc}" alt="${item.name}" class="card-img-top" />
     <div class="card-body">
@@ -64,13 +68,14 @@ function renderCard(item, regionId) {
       <p class="card-text">${item.description || item.type || ''}</p>
       ${item.address ? `<p class="card-text">📍 ${item.address}</p>` : ''}
       ${item.phone ? `<p class="card-text">📞 ${item.phone}</p>` : ''}
-      ${item.rating ? `<p class="card-text">⭐ 評分：${item.rating}</p>` : ''}
+      ${ratingText}
     </div>
   `;
 
   card.appendChild(link);
   return card;
 }
+
 
 function countyToRegionId(countyName) {
   for (const [key, value] of Object.entries(countyMap)) {

@@ -28,4 +28,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
             "LOWER(r.type) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(r.county) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Restaurant> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT r FROM Restaurant r")
+    List<Restaurant> findAllWithReviews();
 }

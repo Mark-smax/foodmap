@@ -26,6 +26,7 @@ public class RestaurantService {
     private final RestaurantReviewRepository reviewRepository;
     private final RestaurantFavoriteRepository favoriteRepository;
 
+    
     public RestaurantService(RestaurantRepository restaurantRepository,
                              RestaurantPhotoRepository photoRepository,
                              RestaurantReviewRepository reviewRepository,
@@ -54,7 +55,10 @@ public class RestaurantService {
         }
 
         // 加入縮圖處理
-        page.forEach(this::setRandomThumbnail);
+        page.forEach(r -> {
+            this.setRandomThumbnail(r);
+            this.setAverageRating(r); // 新增這行
+        });
 
         return page;
     }
@@ -143,6 +147,7 @@ public class RestaurantService {
 
     public RestaurantDetailsDTO getRestaurantDetails(Long restaurantId, Long memberId) {
         Restaurant restaurant = getRestaurantById(restaurantId);
+        setAverageRating(restaurant);
 
         List<String> base64Photos = getPhotosByRestaurantId(restaurantId).stream()
             .map(photo -> Base64.getEncoder().encodeToString(photo.getImage()))
@@ -155,5 +160,33 @@ public class RestaurantService {
 
         return new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite);
     }
+    
+    private void setAverageRating(Restaurant restaurant) {
+        List<RestaurantReview> reviews = reviewRepository.findByRestaurantId(restaurant.getId());
+        if (!reviews.isEmpty()) {
+            double avg = reviews.stream()
+                .mapToInt(RestaurantReview::getRating)
+                .average()
+                .orElse(0.0);
+            restaurant.setAvgRating(Math.round(avg * 10.0) / 10.0); // 四捨五入到小數點一位
+        } else {
+            restaurant.setAvgRating(0.0);
+        }
+    }
+    
+    public List<Restaurant> getTopRestaurantsByAvgRating(int limit) {
+        List<Restaurant> all = restaurantRepository.findAll();
+        all.forEach(r -> {
+            setRandomThumbnail(r);
+            setAverageRating(r);
+        });
+
+        return all.stream()
+                .sorted((a, b) -> Double.compare(b.getAvgRating(), a.getAvgRating()))
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+    
+    
     
 }
