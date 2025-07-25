@@ -17,10 +17,8 @@
   </style>
 </head>
 <body class="container py-4">
-	<div th:replace="~{layout/navbar}"></div>
+  <div th:replace="~{layout/navbar}"></div>
 
-
-	<div class="container"></div>
   <h1 class="mb-3" th:text="${restaurant.name}">餐廳名稱</h1>
   <p><strong>地址：</strong><span th:text="${restaurant.address}">地址</span></p>
   <p><strong>電話：</strong><span th:text="${restaurant.phone}">電話</span></p>
@@ -31,7 +29,7 @@
 
   <h4 class="mt-4">店家照片</h4>
   <div class="photo-preview">
-    <img th:each="photo : ${photos}" th:src="'data:image/jpeg;base64,' + ${photo}" />
+    <img th:each="photo : ${photos}" th:src="'data:image/jpeg;base64,' + ${photo}" alt="餐廳照片"/>
   </div>
 
   <h4 class="mt-4">網友評論</h4>
@@ -43,6 +41,42 @@
         <span th:text="${reviewTimes[stat.index]}">評論時間</span>
       </p>
     </div>
+    <p th:if="${#lists.isEmpty(reviews)}" class="text-muted">目前尚無評論</p>
   </div>
+
+  <hr class="my-4">
+
+  <h4>我要評論</h4>
+
+  <!-- ✅ 顯示錯誤訊息 -->
+  <div th:if="${error}" class="alert alert-danger" th:text="${error}">錯誤訊息</div>
+
+  <form th:action="@{/restaurant/review}" method="post">
+    <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+
+    <div class="mb-2">
+      <label>星等：</label>
+      <select name="rating" class="form-select w-auto" required>
+        <option value="">請選擇</option>
+        <option value="5">★★★★★</option>
+        <option value="4">★★★★</option>
+        <option value="3">★★★</option>
+        <option value="2">★★</option>
+        <option value="1">★</option>
+      </select>
+    </div>
+
+    <div class="mb-2">
+      <label>評論內容：</label><br>
+      <textarea name="comment" class="form-control" required></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">送出評論</button>
+  </form>
+
+  <form th:action="@{/restaurant/favorite}" method="post" class="mt-3">
+    <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+    <button type="submit" th:text="${favorite} ? '取消收藏' : '加入收藏'" class="btn btn-outline-danger"></button>
+  </form>
 </body>
 </html>

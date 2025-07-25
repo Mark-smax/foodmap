@@ -2,6 +2,7 @@ package com.example.foodmap.service;
 
 import com.example.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.model.Restaurant;
+import com.example.foodmap.model.RestaurantFavorite;
 import com.example.foodmap.model.RestaurantPhoto;
 import com.example.foodmap.model.RestaurantReview;
 import com.example.foodmap.repository.*;
@@ -108,6 +109,24 @@ public class RestaurantService {
     public void deleteRestaurant(Long id) {
         restaurantRepository.deleteById(id);
     }
+    
+    @Transactional
+    public void saveReview(RestaurantReview review) {
+        reviewRepository.save(review);
+    }
+
+    @Transactional
+    public void toggleFavorite(Long restaurantId, Long memberId) {
+        boolean exists = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
+        if (exists) {
+            favoriteRepository.deleteByRestaurantIdAndMemberId(restaurantId, memberId);
+        } else {
+            RestaurantFavorite fav = new RestaurantFavorite();
+            fav.setRestaurantId(restaurantId);
+            fav.setMemberId(memberId);
+            favoriteRepository.save(fav);
+        }
+    }
 
     public Restaurant getRestaurantById(Long id) {
         return restaurantRepository.findById(id)
@@ -136,4 +155,5 @@ public class RestaurantService {
 
         return new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite);
     }
+    
 }

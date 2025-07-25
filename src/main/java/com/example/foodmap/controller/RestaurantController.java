@@ -50,7 +50,17 @@ public class RestaurantController {
     @GetMapping("/{id}/details")
     public RestaurantDetailsDTO getRestaurantDetails(
         @PathVariable("id") Long restaurantId,
-        @RequestParam(value = "memberId", required = false) Long memberId) {
+        @RequestParam(value = "memberId", required = false) String memberIdStr) {
+
+        Long memberId = null;
+        if (memberIdStr != null && !memberIdStr.isBlank()) {
+            try {
+                memberId = Long.parseLong(memberIdStr);
+            } catch (NumberFormatException e) {
+                memberId = null;
+            }
+        }
+
         return service.getRestaurantDetails(restaurantId, memberId);
     }
 }
