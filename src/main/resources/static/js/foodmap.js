@@ -49,7 +49,7 @@ function renderCard(item, regionId) {
   card.style.backgroundColor = color;
 
   const link = document.createElement('a');
-  link.href = `/restaurant-detail?id=${item.id}&memberId=101`;
+  link.href = `/restaurant-detail?id=${item.id}`;
   link.style.textDecoration = 'none';
   link.style.color = 'inherit';
 
@@ -61,10 +61,14 @@ function renderCard(item, regionId) {
     ? `<p class="card-text">⭐ 平均：${item.avgRating} 分</p>`
     : '';
 
+  const bookmark = item.favorite
+    ? `<span style="color: red; font-size: 1.2em;">🔖</span> `
+    : '';
+
   link.innerHTML = `
     <img src="${imgSrc}" alt="${item.name}" class="card-img-top" />
     <div class="card-body">
-      <h5 class="card-title">${item.name}</h5>
+      <h5 class="card-title">${bookmark}${item.name}</h5>
       <p class="card-text">${item.description || item.type || ''}</p>
       ${item.address ? `<p class="card-text">📍 ${item.address}</p>` : ''}
       ${item.phone ? `<p class="card-text">📞 ${item.phone}</p>` : ''}
@@ -86,6 +90,13 @@ function countyToRegionId(countyName) {
 
 function loadBackendRestaurantsByParams(params = {}, regionId = null) {
   const url = new URL('/api/restaurants', window.location.origin);
+
+  // ✅ 從 sessionStorage 或全域變數抓登入會員 ID
+  const memberId = sessionStorage.getItem("loginMemberId");
+  if (memberId) {
+    params.memberId = memberId;
+  }
+
   Object.entries(params).forEach(([key, val]) => {
     if (val) url.searchParams.append(key, val);
   });
@@ -105,6 +116,7 @@ function loadBackendRestaurantsByParams(params = {}, regionId = null) {
       });
     });
 }
+
 
 // 地圖點擊事件
 document.querySelectorAll('.map-region').forEach(region => {

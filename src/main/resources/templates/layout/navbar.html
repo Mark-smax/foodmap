@@ -21,21 +21,21 @@
 						th:href="@{/attr/add}">上傳景點</a></li>
 					<li class="nav-item"><a class="nav-link"
 						th:href="@{/attr/show}">景點</a></li>
-						<li class="nav-item"><a class="nav-link" th:href="@{/foodmap}">美食地圖</a>
+					<li class="nav-item"><a class="nav-link" th:href="@{/foodmap}">美食地圖</a>
 					</li>
 					<li class="nav-item" th:if="!${session.loginMemberName}"><a
 						class="nav-link" th:href="@{/member/add}">註冊</a></li>
 
 					<li class="nav-item" th:if="${session.loginMemberName}"><a
 						class="nav-link" th:href="@{/member/detail}">我的資訊</a></li>
-						
+
 					<li class="nav-item" th:if="${session.loginMemberRoles eq 'admin'}">
-  <a class="nav-link" th:href="@{/admin/restaurant/create}">新增美食地圖</a>
-</li>
+						<a class="nav-link" th:href="@{/admin/restaurant/create}">新增美食地圖</a>
+					</li>
 
 					<li class="nav-item" th:if="!${session.loginMemberName}"><a
 						class="nav-link" th:href="@{/member/login}">登入</a></li>
-					
+
 					<li class="nav-item" th:if="${session.loginMemberName}"><a
 						class="nav-link" th:href="@{/logout}">登出</a></li>
 

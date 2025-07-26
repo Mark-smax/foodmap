@@ -13,73 +13,90 @@ public class RestaurantReview {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "restaurant_id")
+    @Column(name = "restaurant_id", nullable = false)
     private Long restaurantId;
 
-    @Column(name = "member_id")
+    @Column(name = "member_id", nullable = false)
     private Long memberId;
 
+    @Column(nullable = false)
     private int rating;
+
+    @Column(nullable = false)
     private String comment;
 
-    @Column(name = "created_time")
+    @Column(name = "created_time", nullable = false)
     private LocalDateTime createdTime;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", insertable = false, updatable = false)
     private Member member;
-    
+
+    @Column(name = "is_hidden", nullable = false)
+    private Boolean isHidden = false;
+
+    // 建構子
+    public RestaurantReview() {
+    }
+
+    // Getter / Setter
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getRestaurantId() {
+        return restaurantId;
+    }
+
+    public void setRestaurantId(Long restaurantId) {
+        this.restaurantId = restaurantId;
+    }
+
+    public Long getMemberId() {
+        return memberId;
+    }
+
+    public void setMemberId(Long memberId) {
+        this.memberId = memberId;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public void setRating(int rating) {
+        this.rating = rating;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+    public LocalDateTime getCreatedTime() {
+        return createdTime;
+    }
+
+    public void setCreatedTime(LocalDateTime createdTime) {
+        this.createdTime = createdTime;
+    }
+
     public Member getMember() {
         return member;
     }
 
-	public Long getId() {
-		return id;
-	}
+    public Boolean getIsHidden() {
+        return isHidden;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public Long getRestaurantId() {
-		return restaurantId;
-	}
-
-	public void setRestaurantId(Long restaurantId) {
-		this.restaurantId = restaurantId;
-	}
-
-	public Long getMemberId() {
-		return memberId;
-	}
-
-	public void setMemberId(Long memberId) {
-		this.memberId = memberId;
-	}
-
-	public int getRating() {
-		return rating;
-	}
-
-	public void setRating(int rating) {
-		this.rating = rating;
-	}
-
-	public String getComment() {
-		return comment;
-	}
-
-	public void setComment(String comment) {
-		this.comment = comment;
-	}
-
-	public LocalDateTime getCreatedTime() {
-		return createdTime;
-	}
-
-	public void setCreatedTime(LocalDateTime createdTime) {
-		this.createdTime = createdTime;
-	}
-
-    // 建構子與 Getter/Setter 省略...
+    public void setIsHidden(Boolean isHidden) {
+        this.isHidden = isHidden;
+    }
 }

@@ -67,17 +67,18 @@ public class RestaurantInteractionController {
                                  HttpSession session,
                                  RedirectAttributes redirectAttributes) {
 
-        Member loginUser = (Member) session.getAttribute("loginUser");
-        if (loginUser == null) {
+        Integer loginMemberIdInt = (Integer) session.getAttribute("loginMemberId");
+        if (loginMemberIdInt == null) {
             redirectAttributes.addFlashAttribute("error", "請先登入才能收藏！");
             return "redirect:/restaurant-detail?id=" + restaurantId;
         }
 
-        Long memberId = loginUser.getMemberId().longValue();
+        Long memberId = loginMemberIdInt.longValue();
         restaurantService.toggleFavorite(restaurantId, memberId);
 
         return "redirect:/restaurant-detail?id=" + restaurantId;
     }
+
 
     // ✏️ 編輯評論
     @PostMapping("/review/edit")

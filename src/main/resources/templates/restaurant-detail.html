@@ -1,128 +1,127 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<title>餐廳詳細資訊</title>
-<link
-	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-	rel="stylesheet">
-<style>
-.photo-preview img {
-	max-width: 150px;
-	margin: 5px;
-	border-radius: 10px;
-}
+  <meta charset="UTF-8">
+  <title>餐廳詳細資訊</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .photo-preview img {
+      max-width: 150px;
+      margin: 5px;
+      border-radius: 10px;
+    }
 
-.review-item {
-	padding: 10px;
-	border-bottom: 1px solid #ccc;
-}
-</style>
+    .review-item {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body class="container py-4">
-	<div th:replace="~{layout/navbar}"></div>
+  <div th:replace="~{layout/navbar}"></div>
 
-	<h1 class="mb-3" th:text="${restaurant.name}">餐廳名稱</h1>
+  <h1 class="mb-3" th:text="${restaurant.name}">餐廳名稱</h1>  
+  <form th:action="@{/restaurant/favorite}" method="post" class="mt-3">
+    <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+    <button type="submit" th:text="${favorite} ? '取消收藏' : '加入收藏'" class="btn btn-outline-danger"></button>
+  </form>
+  
+<br>
+  <p><strong>地址：</strong><span th:text="${restaurant.address}">地址</span></p>
+  <p><strong>電話：</strong><span th:text="${restaurant.phone}">電話</span></p>
+  <p><strong>平均星等：</strong>
+    <span th:classappend="${restaurant.avgRating >= 4.5} ? 'text-warning fw-bold' : ''"
+          th:text="${restaurant.avgRating != null ? restaurant.avgRating : '尚無評分'}">0.0</span>
+    （<span th:text="${#lists.size(reviews)}">0</span> 則評論）
+  </p>
+  <p><strong>收藏狀態：</strong>
+    <span th:text="${favorite} ? '已收藏' : '尚未收藏'">尚未收藏</span>
+  </p>
 
-	<p>
-		<strong>地址：</strong><span th:text="${restaurant.address}">地址</span>
-	</p>
-	<p>
-		<strong>電話：</strong><span th:text="${restaurant.phone}">電話</span>
-	</p>
-	<p>
-		<strong>平均星等：</strong> <span
-			th:classappend="${restaurant.avgRating >= 4.5} ? 'text-warning fw-bold' : ''"
-			th:text="${restaurant.avgRating != null ? restaurant.avgRating : '尚無評分'}">0.0</span>
-		（<span th:text="${#lists.size(reviews)}">0</span> 則評論）
-	</p>
+  <h4 class="mt-4">店家照片</h4>
+  <div class="photo-preview">
+    <img th:each="photo : ${photos}" th:src="'data:image/jpeg;base64,' + ${photo}" alt="餐廳照片" />
+  </div>
 
-	<p>
-		<strong>收藏狀態：</strong> <span th:text="${favorite} ? '已收藏' : '尚未收藏'">尚未收藏</span>
-	</p>
+  <h4 class="mt-4">網友評論</h4>
+  <div class="mt-2">
+    <div class="review-item" th:each="r, stat : ${reviews}">
+      <p><strong>暱稱：</strong><span th:text="${r.member.memberNickName}">訪客</span></p>
+      <p><strong>星等：</strong><span th:text="${r.rating}">4</span></p>
+    
+      <!-- 隱藏評論 -->
+<div th:if="${r.isHidden == true}">
+  <p th:if="${loginMemberId == r.member.memberId}">
+    <i class="text-muted">此留言已被管理員設為隱藏：</i><br>
+    <i th:text="${r.comment}"></i>
+  </p>
+  <p th:if="${loginMemberId != r.member.memberId}">
+    <i class="text-muted">此留言已被管理員隱藏</i>
+  </p>
+</div>
 
-	<h4 class="mt-4">店家照片</h4>
-	<div class="photo-preview">
-		<img th:each="photo : ${photos}"
-			th:src="'data:image/jpeg;base64,' + ${photo}" alt="餐廳照片" />
-	</div>
+<!-- 正常顯示評論 -->
+<div th:if="${r.isHidden != true}">
+  <p th:text="${r.comment}">評論內容</p>
+  <div th:if="${session.loginMemberRoles eq 'admin' and !r.isHidden}">
+  <form th:action="@{/review/hide}" method="post" class="d-inline ms-2">
+    <input type="hidden" name="reviewId" th:value="${r.id}" />
+    <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+    <button type="submit" class="btn btn-sm btn-warning">設為隱藏</button>
+  </form>
+</div>
+</div>
 
-	<h4 class="mt-4">網友評論</h4>
-	<div class="mt-2">
-		<div class="review-item" th:each="r, stat : ${reviews}">
-			<p>
-				<strong>暱稱：</strong><span th:text="${r.member.memberNickName}">訪客</span>
-			</p>
-			<p>
-				<strong>星等：</strong><span th:text="${r.rating}">4</span>
-			</p>
-			<p th:text="${r.comment}">評論內容</p>
-			<p class="text-muted">
-				<span th:text="${reviewTimes[stat.index]}">評論時間</span>
-			</p>
+      <p class="text-muted"><span th:text="${reviewTimes[stat.index]}">評論時間</span></p>
 
-			<!-- ✅ 如果是登入者本人才顯示操作按鈕 -->
-			<div
-				th:if="${loginUser != null and loginUser.memberId == r.member.memberId}">
-				<!-- 顯示編輯/刪除按鈕 -->
-			</div>
-			<!-- 編輯評論表單 -->
-			<form th:action="@{/restaurant/review/edit}" method="post"
-				class="d-inline">
-				<input type="hidden" name="reviewId" th:value="${r.id}" /> <input
-					type="number" name="rating" min="1" max="5" th:value="${r.rating}"
-					required class="form-control d-inline w-auto" /> <input
-					type="text" name="comment" th:value="${r.comment}" required
-					class="form-control d-inline w-auto" />
-				<button type="submit" class="btn btn-sm btn-success">更新</button>
-			</form>
+      <!-- ✏️ 編輯與刪除：只有自己且留言未被隱藏才能顯示 -->
+<div th:if="${loginMemberId != null and loginMemberId == r.member.memberId and r.isHidden != true}">
+        <!-- 編輯表單 -->
+        <form th:action="@{/review/edit}" method="post" class="d-inline">
+          <input type="hidden" name="reviewId" th:value="${r.id}" />
+          <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+          <input type="number" name="rating" min="1" max="5" th:value="${r.rating}" required class="form-control d-inline w-auto" />
+          <input type="text" name="comment" th:value="${r.comment}" required class="form-control d-inline w-auto" />
+          <button type="submit" class="btn btn-sm btn-success">更新</button>
+        </form>
 
-			<!-- 刪除評論按鈕 -->
-			<form th:action="@{/restaurant/review/delete}" method="post"
-				class="d-inline ms-2">
-				<input type="hidden" name="reviewId" th:value="${r.id}" />
-				<button type="submit" class="btn btn-sm btn-danger"
-					onclick="return confirm('確定刪除這則評論？');">刪除</button>
-			</form>
-		</div>
-	</div>
-	<p th:if="${#lists.isEmpty(reviews)}" class="text-muted">目前尚無評論</p>
-	</div>
+        <!-- 刪除表單 -->
+        <form th:action="@{/review/delete}" method="post" class="d-inline ms-2">
+          <input type="hidden" name="reviewId" th:value="${r.id}" />
+          <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('確定刪除這則評論？');">刪除</button>
+        </form>
+      </div>
+    </div>
 
-	<hr class="my-4">
+    <p th:if="${#lists.isEmpty(reviews)}" class="text-muted">目前尚無評論</p>
+  </div>
+        <hr class="my-4">
 
-	<h4>我要評論</h4>
+  <h4>我要評論</h4>
+  <div th:if="${error}" class="alert alert-danger" th:text="${error}">錯誤訊息</div>
 
-	<!-- ✅ 顯示錯誤訊息 -->
-	<div th:if="${error}" class="alert alert-danger" th:text="${error}">錯誤訊息</div>
+  <form th:action="@{/restaurant/review}" method="post">
+    <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+    <div class="mb-2">
+      <label>星等：</label>
+      <select name="rating" class="form-select w-auto" required>
+        <option value="">請選擇</option>
+        <option value="5">★★★★★</option>
+        <option value="4">★★★★</option>
+        <option value="3">★★★</option>
+        <option value="2">★★</option>
+        <option value="1">★</option>
+      </select>
+    </div>
+    <div class="mb-2">
+      <label>評論內容：</label><br>
+      <textarea name="comment" class="form-control" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">送出評論</button>
+  </form>
 
-	<form th:action="@{/restaurant/review}" method="post">
-		<input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
 
-		<div class="mb-2">
-			<label>星等：</label> <select name="rating" class="form-select w-auto"
-				required>
-				<option value="">請選擇</option>
-				<option value="5">★★★★★</option>
-				<option value="4">★★★★</option>
-				<option value="3">★★★</option>
-				<option value="2">★★</option>
-				<option value="1">★</option>
-			</select>
-		</div>
-
-		<div class="mb-2">
-			<label>評論內容：</label><br>
-			<textarea name="comment" class="form-control" required></textarea>
-		</div>
-
-		<button type="submit" class="btn btn-primary">送出評論</button>
-	</form>
-
-	<form th:action="@{/restaurant/favorite}" method="post" class="mt-3">
-		<input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
-		<button type="submit" th:text="${favorite} ? '取消收藏' : '加入收藏'"
-			class="btn btn-outline-danger"></button>
-	</form>
 </body>
 </html>
+      

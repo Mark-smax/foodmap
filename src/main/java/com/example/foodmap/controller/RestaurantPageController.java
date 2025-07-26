@@ -1,7 +1,6 @@
 package com.example.foodmap.controller;
 
 import com.example.foodmap.dto.RestaurantDetailsDTO;
-import com.example.foodmap.member.domain.Member;
 import com.example.foodmap.model.RestaurantReview;
 import com.example.foodmap.service.RestaurantService;
 
@@ -34,32 +33,30 @@ public class RestaurantPageController {
                                  HttpSession session,
                                  Model model) {
 
+        // 取得登入會員 ID（若未登入則為 null）
         Integer loginMemberIdInt = (Integer) session.getAttribute("loginMemberId");
-        Long loginMemberId = loginMemberIdInt.longValue();
+        Long loginMemberId = (loginMemberIdInt != null) ? loginMemberIdInt.longValue() : null;
 
-        Member loginUser = (Member) session.getAttribute("loginUser"); // ⭐ 加這行
-        model.addAttribute("loginUser", loginUser); // ⭐ 加這行
+        // ✅ 傳 loginMemberId 給 Thymeleaf 用來比對留言者是否是本人
+        model.addAttribute("loginMemberId", loginMemberId);
 
+        // 取得餐廳詳細資料（含照片、評論、是否收藏）
         RestaurantDetailsDTO dto = restaurantService.getRestaurantDetails(id, loginMemberId);
 
+        // 取得評論並格式化時間
         List<RestaurantReview> reviews = dto.getReviews();
-        System.out.println("取得評論數量：" + reviews.size());
-        for (RestaurantReview r : reviews) {
-            System.out.println("⭐ " + r.getRating() + " 星，評論：" + r.getComment());
-        }
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         List<String> reviewTimes = reviews.stream()
                 .map(r -> r.getCreatedTime().format(formatter))
                 .collect(Collectors.toList());
 
+        // 傳資料給 View
         model.addAttribute("restaurant", dto.getRestaurant());
         model.addAttribute("photos", dto.getPhotoBase64List());
         model.addAttribute("reviews", reviews);
         model.addAttribute("reviewTimes", reviewTimes);
         model.addAttribute("favorite", dto.isFavorite());
 
-        return "restaurant-detail";
+        return "restaurant-detail"; // 對應 Thymeleaf 的 restaurant-detail.html
     }
-
 }

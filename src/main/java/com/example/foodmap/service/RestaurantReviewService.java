@@ -2,6 +2,8 @@ package com.example.foodmap.service;
 
 import com.example.foodmap.model.RestaurantReview;
 import com.example.foodmap.repository.RestaurantReviewRepository;
+
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,21 +32,60 @@ public class RestaurantReviewService {
     }
 
     /**
-     * 刪除評論（只能刪自己的）
+     * 刪除評論（只能刪自己的評論）✔️
      */
-    public void deleteReviewByIdAndMemberId(Long reviewId, Long memberId) {
-        reviewRepo.deleteByIdAndMemberId(reviewId, memberId);
+    
+    @Transactional
+    public void setReviewHidden(Long reviewId, boolean hidden) {
+        RestaurantReview review = reviewRepo.findById(reviewId).orElse(null);
+        if (review != null) {
+            review.setIsHidden(hidden);
+        }
+    }
+
+    @Transactional
+    public boolean deleteReviewByIdAndMemberId(Long reviewId, Long memberId) {
+        System.out.println("🧨 刪除請求 reviewId = " + reviewId + ", memberId = " + memberId);
+
+        RestaurantReview review = reviewRepo.findByIdAndMemberId(reviewId, memberId);
+        if (review == null) {
+            // 額外查一次看是哪個 member 留的
+            review = reviewRepo.findById(reviewId).orElse(null);
+            if (review != null) {
+                System.out.println("⚠️ 該評論實際是 memberId = " + review.getMemberId());
+            } else {
+                System.out.println("❌ 查無此評論 ID");
+            }
+            return false;
+        }
+
+        reviewRepo.delete(review);
+        System.out.println("✅ 刪除成功");
+        return true;
     }
 
     /**
-     * 修改評論（只能改自己的）
+     * 修改評論（只能編輯自己的評論）✔️
      */
-    public void updateReview(Long reviewId, Long memberId, int rating, String comment) {
+    @Transactional
+    public boolean updateReview(Long reviewId, Long memberId, int rating, String comment) {
+        System.out.println("🛠️ 編輯請求 reviewId = " + reviewId + ", memberId = " + memberId + ", rating = " + rating + ", comment = " + comment);
+
         RestaurantReview review = reviewRepo.findByIdAndMemberId(reviewId, memberId);
-        if (review != null) {
-            review.setRating(rating);
-            review.setComment(comment);
-            reviewRepo.save(review);
+        if (review == null) {
+            // 額外查一次看是哪個 member 留的
+            review = reviewRepo.findById(reviewId).orElse(null);
+            if (review != null) {
+                System.out.println("⚠️ 該評論實際是 memberId = " + review.getMemberId());
+            } else {
+                System.out.println("❌ 查無此評論 ID");
+            }
+            return false;
         }
+
+        review.setRating(rating);
+        review.setComment(comment);
+        System.out.println("✅ 更新成功");
+        return true;
     }
 }

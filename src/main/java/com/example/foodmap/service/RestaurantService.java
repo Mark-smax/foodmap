@@ -1,6 +1,7 @@
 package com.example.foodmap.service;
 
 import com.example.foodmap.dto.RestaurantDetailsDTO;
+import com.example.foodmap.dto.RestaurantDto;
 import com.example.foodmap.model.Restaurant;
 import com.example.foodmap.model.RestaurantFavorite;
 import com.example.foodmap.model.RestaurantPhoto;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 
 import java.util.Base64;
 import java.util.List;
@@ -26,7 +28,6 @@ public class RestaurantService {
     private final RestaurantReviewRepository reviewRepository;
     private final RestaurantFavoriteRepository favoriteRepository;
 
-    
     public RestaurantService(RestaurantRepository restaurantRepository,
                              RestaurantPhotoRepository photoRepository,
                              RestaurantReviewRepository reviewRepository,
@@ -37,7 +38,7 @@ public class RestaurantService {
         this.favoriteRepository = favoriteRepository;
     }
 
-    public Page<Restaurant> searchRestaurants(String county, Double minRating, String type, Pageable pageable) {
+    public Page<RestaurantDto> searchRestaurants(String county, Double minRating, String type, Pageable pageable, Long memberId) {
         boolean hasCounty = county != null && !county.trim().isEmpty();
         boolean hasType = type != null && !type.trim().isEmpty();
 
@@ -54,37 +55,45 @@ public class RestaurantService {
             return Page.empty(pageable);
         }
 
-        // 加入縮圖處理
-        page.forEach(r -> {
-            this.setRandomThumbnail(r);
-            this.setAverageRating(r); // 新增這行
+        return convertToDtoPage(page, memberId);
+    }
+
+    public Page<RestaurantDto> searchByCountyAndType(String county, String type, Pageable pageable, Long memberId) {
+        Page<Restaurant> page = restaurantRepository.findByCountyAndTypeContainingIgnoreCase(county, type, pageable);
+        return convertToDtoPage(page, memberId);
+    }
+
+    public Page<RestaurantDto> searchByKeyword(String keyword, Pageable pageable, Long memberId) {
+        Page<Restaurant> page = restaurantRepository.searchByKeyword(keyword, pageable);
+        return convertToDtoPage(page, memberId);
+    }
+
+    private Page<RestaurantDto> convertToDtoPage(Page<Restaurant> page, Long memberId) {
+        List<RestaurantDto> dtoList = page.getContent().stream().map(r -> {
+            setAverageRating(r);
+            String thumbnail = getRandomThumbnail(r.getId());
+            boolean isFav = memberId != null && favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
+            return new RestaurantDto(r.getId(), r.getName(), r.getAddress(), r.getPhone(), r.getCounty(), r.getType(), r.getAvgRating(), thumbnail, isFav);
+        }).collect(Collectors.toList());
+
+        // ⭐ 收藏優先排序，再依星等高低
+        dtoList.sort((a, b) -> {
+            if (a.isFavorite != b.isFavorite) {
+                return Boolean.compare(b.isFavorite, a.isFavorite); // true 優先
+            }
+            return Double.compare(b.avgRating, a.avgRating); // 星等高優先
         });
 
-        return page;
+        return new PageImpl<>(dtoList, page.getPageable(), page.getTotalElements());
     }
 
-    private void setRandomThumbnail(Restaurant restaurant) {
-        List<RestaurantPhoto> photos = photoRepository.findTop5ByRestaurantIdOrderByIdAsc(restaurant.getId());
+    private String getRandomThumbnail(Long restaurantId) {
+        List<RestaurantPhoto> photos = photoRepository.findTop5ByRestaurantIdOrderByIdAsc(restaurantId);
         if (!photos.isEmpty()) {
             int randomIndex = new Random().nextInt(photos.size());
-            String randomBase64 = Base64.getEncoder().encodeToString(photos.get(randomIndex).getImage());
-            restaurant.setThumbnail(randomBase64);
+            return Base64.getEncoder().encodeToString(photos.get(randomIndex).getImage());
         }
-    }
-
-    public Page<Restaurant> searchByCountyAndType(String county, String type, Pageable pageable) {
-        if (county == null || county.trim().isEmpty() || type == null || type.trim().isEmpty()) {
-            return Page.empty(pageable);
-        }
-        Page<Restaurant> page = restaurantRepository.findByCountyAndTypeContainingIgnoreCase(county, type, pageable);
-        page.forEach(this::setRandomThumbnail);
-        return page;
-    }
-
-    public Page<Restaurant> searchByKeyword(String keyword, Pageable pageable) {
-        Page<Restaurant> page = restaurantRepository.searchByKeyword(keyword, pageable);
-        page.forEach(this::setRandomThumbnail);
-        return page;
+        return null;
     }
 
     @Transactional
@@ -113,7 +122,7 @@ public class RestaurantService {
     public void deleteRestaurant(Long id) {
         restaurantRepository.deleteById(id);
     }
-    
+
     @Transactional
     public void saveReview(RestaurantReview review) {
         reviewRepository.save(review);
@@ -160,7 +169,7 @@ public class RestaurantService {
 
         return new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite);
     }
-    
+
     private void setAverageRating(Restaurant restaurant) {
         List<RestaurantReview> reviews = reviewRepository.findByRestaurantId(restaurant.getId());
         if (!reviews.isEmpty()) {
@@ -168,25 +177,19 @@ public class RestaurantService {
                 .mapToInt(RestaurantReview::getRating)
                 .average()
                 .orElse(0.0);
-            restaurant.setAvgRating(Math.round(avg * 10.0) / 10.0); // 四捨五入到小數點一位
+            restaurant.setAvgRating(Math.round(avg * 10.0) / 10.0);
         } else {
             restaurant.setAvgRating(0.0);
         }
     }
-    
+
     public List<Restaurant> getTopRestaurantsByAvgRating(int limit) {
         List<Restaurant> all = restaurantRepository.findAll();
-        all.forEach(r -> {
-            setRandomThumbnail(r);
-            setAverageRating(r);
-        });
+        all.forEach(this::setAverageRating);
 
         return all.stream()
                 .sorted((a, b) -> Double.compare(b.getAvgRating(), a.getAvgRating()))
                 .limit(limit)
                 .collect(Collectors.toList());
     }
-    
-    
-    
 }
