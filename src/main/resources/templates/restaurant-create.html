@@ -30,31 +30,72 @@
         <option value="">請選擇</option>
         <option>台北市</option>
         <option>新北市</option>
+        <option>基隆市</option>
         <option>桃園市</option>
+        <option>新竹市</option>
+        <option>新竹縣</option>
+        <option>苗栗縣</option>
         <option>台中市</option>
+        <option>彰化縣</option>
+        <option>南投縣</option>
+        <option>雲林縣</option>
+        <option>嘉義市</option>
+        <option>嘉義縣</option>
         <option>台南市</option>
         <option>高雄市</option>
         <option>屏東縣</option>
-        <option>花蓮縣</option>
         <option>台東縣</option>
-        <!-- 可再加其他 -->
+        <option>花蓮縣</option>
+        <option>宜蘭縣</option>
+        <option>澎湖縣</option>
+        <option>金門縣</option>
+        <option>連江縣</option>
       </select>
     </div>
     <div class="mb-3">
       <label class="form-label">分類（可複選）</label><br>
       <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="早餐">
+        <label class="form-check-label">早餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="早午餐">
+        <label class="form-check-label">早午餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="午餐">
+        <label class="form-check-label">午餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="下午茶">
+        <label class="form-check-label">下午茶</label>
+      </div>
+      <div class="form-check form-check-inline">
         <input class="form-check-input" type="checkbox" name="type" value="小吃">
         <label class="form-check-label">小吃</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="晚餐">
+        <label class="form-check-label">晚餐</label>
       </div>
       <div class="form-check form-check-inline">
         <input class="form-check-input" type="checkbox" name="type" value="甜點">
         <label class="form-check-label">甜點</label>
       </div>
       <div class="form-check form-check-inline">
-        <input class="form-check-input" type="checkbox" name="type" value="飲料">
-        <label class="form-check-label">飲料</label>
+        <input class="form-check-input" type="checkbox" name="type" value="冰品">
+        <label class="form-check-label">冰品</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="銅板美食">
+        <label class="form-check-label">銅板美食</label>
       </div>
     </div>
+    <div class="mb-3">
+  <label class="form-label">關鍵字（用空格分隔，例如：小籠包 餡餅 排隊）</label>
+  <input type="text" class="form-control" name="keywords" placeholder="輸入關鍵字，如：小籠包 餡餅 排隊美食">
+</div>
+
     <div class="mb-3">
       <label class="form-label">店家照片（最多 5 張）</label>
       <input type="file" class="form-control" name="photos" multiple accept="image/*">

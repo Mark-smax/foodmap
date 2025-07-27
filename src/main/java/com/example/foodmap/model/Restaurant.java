@@ -15,26 +15,20 @@ public class Restaurant {
     private String address;
     private String phone;
     private Double rating;
-    
-    @Transient
-    private String thumbnail;
-    
-    @Transient // 表示這個欄位不存進資料庫
-    private Double avgRating;
-    
-    public Double getAvgRating() {
-        return avgRating;
-    }
 
-    public void setAvgRating(Double avgRating) {
-        this.avgRating = avgRating;
-    }
-
-    @Column(name = "category") // ⭐ 讓 type 映射到資料庫的 category 欄位
+    @Column(name = "category") // type 映射到資料庫欄位 category
     private String type;
 
-    public Restaurant() {
-    }
+    @Column(name = "keywords", columnDefinition = "nvarchar(max)") // 🔥 新增關鍵字欄位
+    private String keywords;
+
+    @Transient
+    private String thumbnail;
+
+    @Transient
+    private Double avgRating;
+
+    public Restaurant() {}
 
     public Restaurant(String name, String county, String address, String phone, Double rating, String type) {
         this.name = name;
@@ -44,6 +38,8 @@ public class Restaurant {
         this.rating = rating;
         this.type = type;
     }
+
+    // --- Getter/Setter ---
 
     public Long getId() {
         return id;
@@ -96,12 +92,28 @@ public class Restaurant {
     public void setType(String type) {
         this.type = type;
     }
-    
+
     public String getThumbnail() {
         return thumbnail;
     }
 
     public void setThumbnail(String thumbnail) {
         this.thumbnail = thumbnail;
+    }
+
+    public Double getAvgRating() {
+        return avgRating;
+    }
+
+    public void setAvgRating(Double avgRating) {
+        this.avgRating = avgRating;
+    }
+
+    public String getKeywords() {
+        return keywords;
+    }
+
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
     }
 }
