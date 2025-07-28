@@ -23,13 +23,13 @@
   <h1 class="mb-3" th:text="${restaurant.name}">餐廳名稱</h1>  
   
   <div th:if="${session.loginMemberRoles == 'admin'}" class="mt-3">
-  <a th:href="@{/admin/restaurant/edit(id=${restaurant.id})}" class="btn btn-warning">修改餐廳資訊</a>
-  <form th:action="@{/admin/restaurant/delete}" method="post" class="d-inline" 
-        onsubmit="return confirm('確定要刪除這筆餐廳資料嗎？');">
-    <input type="hidden" name="id" th:value="${restaurant.id}">
-    <button type="submit" class="btn btn-danger">刪除餐廳</button>
-  </form>
-</div>
+<a th:href="@{/admin/restaurant/edit/{id}(id=${restaurant.id})}" class="btn btn-warning">修改餐廳資訊</a>
+ <form th:action="@{/admin/restaurant/delete/{id}(id=${restaurant.id})}" method="post" class="d-inline"
+      onsubmit="return confirm('確定要刪除這筆餐廳資料嗎？');">
+  <button type="submit" class="btn btn-danger">刪除餐廳</button>
+</form>
+
+	</div>
 
   <form th:action="@{/restaurant/favorite}" method="post" class="mt-3">
     <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
