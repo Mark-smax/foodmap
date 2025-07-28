@@ -201,8 +201,6 @@ public class RestaurantService {
         restaurantRepository.save(restaurant); // 因為 ID 存在，會自動變成更新
     }
 
-    public void deleteRestaurant(Long id) {
-        restaurantRepository.deleteById(id);
-    }
+    
 
 }
