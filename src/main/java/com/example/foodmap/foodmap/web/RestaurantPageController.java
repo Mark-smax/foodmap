@@ -1,19 +1,19 @@
-package com.example.foodmap.controller;
+package com.example.foodmap.foodmap.web;
 
-import com.example.foodmap.dto.RestaurantDetailsDTO;
-import com.example.foodmap.model.RestaurantReview;
-import com.example.foodmap.service.RestaurantService;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import jakarta.servlet.http.HttpSession;
+import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
+import com.example.foodmap.model.RestaurantReview;
+import com.example.foodmap.service.RestaurantService;
 
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.stream.Collectors;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class RestaurantPageController {

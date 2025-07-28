@@ -1,14 +1,18 @@
-package com.example.foodmap.controller;
+package com.example.foodmap.foodmap.web;
 
-import com.example.foodmap.dto.RestaurantDto;
-import com.example.foodmap.dto.RestaurantDetailsDTO;
-import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.service.RestaurantService;
-
-import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
+import com.example.foodmap.foodmap.dto.RestaurantDto;
+import com.example.foodmap.service.RestaurantService;
 
 @RestController
 @RequestMapping("/api/restaurants")

@@ -1,4 +1,4 @@
-package com.example.foodmap.dto;
+package com.example.foodmap.foodmap.dto;
 
 import java.util.List;
 

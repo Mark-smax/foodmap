@@ -1,24 +1,27 @@
 package com.example.foodmap.service;
 
-import com.example.foodmap.dto.RestaurantDetailsDTO;
-import com.example.foodmap.dto.RestaurantDto;
-import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.model.RestaurantFavorite;
-import com.example.foodmap.model.RestaurantPhoto;
-import com.example.foodmap.model.RestaurantReview;
-import com.example.foodmap.repository.*;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageImpl;
-
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
+import com.example.foodmap.foodmap.dto.RestaurantDto;
+import com.example.foodmap.model.Restaurant;
+import com.example.foodmap.model.RestaurantFavorite;
+import com.example.foodmap.model.RestaurantPhoto;
+import com.example.foodmap.model.RestaurantReview;
+import com.example.foodmap.repository.RestaurantFavoriteRepository;
+import com.example.foodmap.repository.RestaurantPhotoRepository;
+import com.example.foodmap.repository.RestaurantRepository;
+import com.example.foodmap.repository.RestaurantReviewRepository;
 
 @Service
 public class RestaurantService {

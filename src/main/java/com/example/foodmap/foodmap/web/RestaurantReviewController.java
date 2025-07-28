@@ -1,4 +1,4 @@
-package com.example.foodmap.controller;
+package com.example.foodmap.foodmap.web;
 
 import com.example.foodmap.model.RestaurantReview;
 import com.example.foodmap.service.RestaurantReviewService;

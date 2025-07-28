@@ -1,4 +1,4 @@
-package com.example.foodmap.dto;
+package com.example.foodmap.foodmap.dto;
 
 import com.example.foodmap.model.Restaurant;
 import com.example.foodmap.model.RestaurantReview;
