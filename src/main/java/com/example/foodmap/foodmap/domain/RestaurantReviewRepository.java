@@ -26,6 +26,10 @@ public interface RestaurantReviewRepository extends JpaRepository<RestaurantRevi
     void deleteByIdAndMemberId(Long id, Long memberId);
 
     // 🔍 找出某會員自己發表的特定評論（用於編輯與刪除權限確認）
-    RestaurantReview findByIdAndMemberId(Long id, Long memberId);
+//    RestaurantReview findByIdAndMemberId(Long id, Long memberId);
     
+    // 查詢根據 reviewId 和 memberId 的評論
+    RestaurantReview findByIdAndMemberId(Long reviewId, Long memberId);
+
 }
+

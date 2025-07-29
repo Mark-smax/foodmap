@@ -90,7 +90,7 @@
       <p class="text-muted"><span th:text="${reviewTimes[stat.index]}">評論時間</span></p>
 
       <!-- 編輯與刪除：只有自己且留言未被隱藏才能顯示 -->
-      <div th:if="${loginMemberId != null and loginMemberId == r.member.memberId and r.isHidden != true}">
+      <div th:if="${loginMemberId != null and loginMemberId == r.member.memberId}">
         <!-- 編輯表單 -->
         <form th:action="@{/review/edit}" method="post" class="d-inline">
           <input type="hidden" name="reviewId" th:value="${r.id}" />
@@ -137,4 +137,3 @@
   </form>
 </body>
 </html>
-  

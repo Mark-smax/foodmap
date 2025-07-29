@@ -27,6 +27,7 @@ public class RestaurantReview {
     @Column(name = "created_time", nullable = false)
     private LocalDateTime createdTime;
 
+    // 多對一關聯，與 Member 資料表進行關聯
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", insertable = false, updatable = false)
     private Member member;
@@ -109,6 +110,9 @@ public class RestaurantReview {
 
     // Getter / Setter for memberNickName
     public String getMemberNickName() {
+        if (this.member != null) {
+            return this.member.getMemberNickName(); // 確保可以從 Member 類別獲取暱稱
+        }
         return memberNickName;
     }
 

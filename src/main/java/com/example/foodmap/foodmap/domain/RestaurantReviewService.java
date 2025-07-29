@@ -1,6 +1,7 @@
 package com.example.foodmap.foodmap.domain;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +27,6 @@ public class RestaurantReviewService {
 
         // 為每個評論填充上傳者的暱稱
         for (RestaurantReview review : reviews) {
-            // 轉換 memberId 為 Integer，並查詢 Member
             Integer memberId = review.getMemberId().intValue(); // 轉換 Long -> Integer
             memberRepository.findById(memberId).ifPresent(member -> {
                 review.setMemberNickName(member.getMemberNickName()); // 設置評論者的暱稱
@@ -59,23 +59,12 @@ public class RestaurantReviewService {
      */
     @Transactional
     public boolean deleteReviewByIdAndMemberId(Long reviewId, Long memberId) {
-        System.out.println("🧨 刪除請求 reviewId = " + reviewId + ", memberId = " + memberId);
-
-        // 查詢該評論是否為該會員所發
         RestaurantReview review = reviewRepo.findByIdAndMemberId(reviewId, memberId);
-        if (review == null) {
-            review = reviewRepo.findById(reviewId).orElse(null); // 額外查詢看看是誰的評論
-            if (review != null) {
-                System.out.println("⚠️ 該評論實際是 memberId = " + review.getMemberId());
-            } else {
-                System.out.println("❌ 查無此評論 ID");
-            }
-            return false;
+        if (review != null) {
+            reviewRepo.delete(review);
+            return true;
         }
-
-        reviewRepo.delete(review);
-        System.out.println("✅ 刪除成功");
-        return true;
+        return false;
     }
 
     /**
@@ -83,23 +72,25 @@ public class RestaurantReviewService {
      */
     @Transactional
     public boolean updateReview(Long reviewId, Long memberId, int rating, String comment) {
-        System.out.println("🛠️ 編輯請求 reviewId = " + reviewId + ", memberId = " + memberId + ", rating = " + rating + ", comment = " + comment);
-
-        // 查詢該評論是否為該會員所發
         RestaurantReview review = reviewRepo.findByIdAndMemberId(reviewId, memberId);
-        if (review == null) {
-            review = reviewRepo.findById(reviewId).orElse(null); // 額外查詢看看是誰的評論
-            if (review != null) {
-                System.out.println("⚠️ 該評論實際是 memberId = " + review.getMemberId());
-            } else {
-                System.out.println("❌ 查無此評論 ID");
-            }
-            return false;
+        if (review != null) {
+            review.setRating(rating);
+            review.setComment(comment);
+            return true;
         }
+        return false;
+    }
 
-        review.setRating(rating);
-        review.setComment(comment);
-        System.out.println("✅ 更新成功");
-        return true;
+    /**
+     * 刪除評論（根據評論 ID 刪除）
+     */
+    @Transactional
+    public boolean deleteReviewById(Long reviewId) {
+        Optional<RestaurantReview> reviewOptional = reviewRepo.findById(reviewId);
+        if (reviewOptional.isPresent()) {
+            reviewRepo.deleteById(reviewId);
+            return true;
+        }
+        return false;
     }
 }

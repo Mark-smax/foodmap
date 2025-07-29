@@ -5,18 +5,18 @@ const foodData = {
 
 const regionGroups = {
   north: ['TWTPE', 'TWTAO', 'TWHSZ', 'TWNWT', 'TWHSQ', 'TWKEE'],
-  central: ['TWNTP', 'TWCHY', 'TWYUN', 'TWMLI', 'TWTXG', 'TWNAN'],
+  central: ['TWNTP', 'TWCHY', 'TWYUN', 'TWMLI', 'TWNAN'],
   south: ['TWTNN', 'TWKHH', 'TWPIF', 'TWCYI', 'TWCYQ'],
-  east: ['TWHUA', 'TITNN', 'TWILN', 'TWTTT'],
-  islands: ['TWKNH', 'TWTTT', 'TWMAC', 'TWKIN', 'TWCHN', 'TWLIE']
+  east: ['TWHUA', 'TWILN', 'TWTTT'],
+  islands: ['TWKIN', 'TWCHN', 'TWLIE']
 };
 
 const countyMap = {
   TWTPE: "台北市", TWTAO: "桃園市", TWHSZ: "新竹市", TWNWT: "新北市", TWPIF: "屏東縣",
-  TWKIN: "金門縣", TWTXG: "台中市", TWTTT: "台東縣", TWNTP: "台中市", TWKEE: "基隆市",
+  TWKIN: "金門縣", TWTTT: "台東縣", TWNTP: "台中市", TWKEE: "基隆市",
   TWCHY: "彰化縣", TWYUN: "雲林縣", TWMLI: "苗栗縣", TWTNN: "台南市", TWNAN: "南投縣",
   TWKHH: "高雄市", TWCHN: "澎湖縣", TWHUA: "花蓮縣", TWHSQ: "新竹縣", TWCYI: "嘉義市",
-  TITNN: "台東市", TWILN: "宜蘭縣", TWMAC: "馬祖", TWCYQ: "嘉義縣", TWLIE: "連江縣"
+  TWILN: "宜蘭縣", TWCYQ: "嘉義縣", TWLIE: "連江縣"
 };
 
 function getRegionGroup(regionId) {
