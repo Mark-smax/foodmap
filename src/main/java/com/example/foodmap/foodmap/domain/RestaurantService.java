@@ -38,6 +38,7 @@ public class RestaurantService {
         this.memberRepository = memberRepository;
     }
 
+    // 根據縣市、最小評分和類型搜尋餐廳
     public Page<RestaurantDto> searchRestaurants(String county, Double minRating, String type, Pageable pageable, Long memberId) {
         boolean hasCounty = county != null && !county.trim().isEmpty();
         boolean hasType = type != null && !type.trim().isEmpty();
@@ -58,22 +59,26 @@ public class RestaurantService {
         return convertToDtoPage(page, memberId);
     }
 
+    // 按照關鍵字搜尋餐廳，關鍵字部分匹配
+    public Page<RestaurantDto> searchByKeyword(String keyword, Pageable pageable, Long memberId) {
+        // 根據關鍵字搜尋餐廳名稱、地址、類型和關鍵字欄位
+        Page<Restaurant> page = restaurantRepository.searchByKeyword(keyword, pageable);
+        return convertToDtoPage(page, memberId);
+    }
+
+    // 根據縣市和類型搜尋餐廳
     public Page<RestaurantDto> searchByCountyAndType(String county, String type, Pageable pageable, Long memberId) {
         Page<Restaurant> page = restaurantRepository.findByCountyAndTypeContainingIgnoreCase(county, type, pageable);
         return convertToDtoPage(page, memberId);
     }
 
-    public Page<RestaurantDto> searchByKeyword(String keyword, Pageable pageable, Long memberId) {
-        Page<Restaurant> page = restaurantRepository.searchByKeyword(keyword, pageable);
-        return convertToDtoPage(page, memberId);
-    }
-
+    // 轉換查詢結果為 RestaurantDto 頁面
     private Page<RestaurantDto> convertToDtoPage(Page<Restaurant> page, Long memberId) {
         List<RestaurantDto> dtoList = page.getContent().stream().map(r -> {
             setAverageRating(r);
             String thumbnail = getRandomThumbnail(r.getId());
             boolean isFav = memberId != null && favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
-            String uploaderName = getUploaderNickname(r.getCreatedBy());
+            String uploaderName = getUploaderNickname(r.getCreatedBy()); // 取得上傳者暱稱
             return new RestaurantDto(r.getId(), r.getName(), r.getAddress(), r.getPhone(), r.getCounty(),
                     r.getType(), r.getAvgRating(), thumbnail, isFav, uploaderName);
         }).collect(Collectors.toList());
@@ -88,18 +93,16 @@ public class RestaurantService {
         return new PageImpl<>(dtoList, page.getPageable(), page.getTotalElements());
     }
 
+ // 查詢上傳者暱稱，從資料庫中查找對應的會員
     private String getUploaderNickname(Integer memberId) {
-        if (memberId == null) return "匿名";
+        if (memberId == null) return "匿名"; // 如果 memberId 为 null，显示 "匿名"
+
+        // 根據 memberId 查詢 Member，並返回其 memberNickName
         return memberRepository.findById(memberId)
-                .map(member -> {
-                    try {
-                        return (String) member.getClass().getMethod("getMemberNickname").invoke(member);
-                    } catch (Exception e) {
-                        return "未知會員";
-                    }
-                })
-                .orElse("匿名");
+                .map(Member::getMemberNickName) // 這裡直接從 Member 類別中取得 memberNickName
+                .orElse("匿名"); // 如果查不到對應的會員，返回 "匿名"
     }
+
 
     private String getRandomThumbnail(Long restaurantId) {
         List<RestaurantPhoto> photos = photoRepository.findTop5ByRestaurantIdOrderByIdAsc(restaurantId);
@@ -182,7 +185,9 @@ public class RestaurantService {
         boolean isFavorite = (memberId != null) &&
             favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
 
-        return new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite);
+        String uploaderNickname = getUploaderNickname(restaurant.getCreatedBy());
+
+        return new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite, uploaderNickname);
     }
 
     private void setAverageRating(Restaurant restaurant) {

@@ -29,9 +29,13 @@ public class Restaurant {
 
     @Transient
     private Double avgRating;
-    
+
     @Column(name = "created_by")
     private Integer createdBy; // 對應 member_id
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", insertable = false, updatable = false)
+    private Member createdByMember; // 使用 Member 類別來映射 createdBy 欄位
 
     public Restaurant() {}
 
@@ -127,5 +131,10 @@ public class Restaurant {
 
     public void setKeywords(String keywords) {
         this.keywords = keywords;
+    }
+
+    // 使用這個方法來取得上傳者的暱稱
+    public String getUploaderNickname() {
+        return createdByMember != null ? createdByMember.getMemberNickName() : null;
     }
 }

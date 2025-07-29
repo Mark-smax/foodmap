@@ -2,7 +2,6 @@ package com.example.foodmap.foodmap.domain;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
 import com.example.foodmap.member.domain.Member;
 
 @Entity
@@ -34,6 +33,10 @@ public class RestaurantReview {
 
     @Column(name = "is_hidden", nullable = false)
     private Boolean isHidden = false;
+
+    // 新增暱稱欄位，用來顯示評論者的暱稱
+    @Transient
+    private String memberNickName;
 
     // 建構子
     public RestaurantReview() {
@@ -92,11 +95,24 @@ public class RestaurantReview {
         return member;
     }
 
+    public void setMember(Member member) {
+        this.member = member;
+    }
+
     public Boolean getIsHidden() {
         return isHidden;
     }
 
     public void setIsHidden(Boolean isHidden) {
         this.isHidden = isHidden;
+    }
+
+    // Getter / Setter for memberNickName
+    public String getMemberNickName() {
+        return memberNickName;
+    }
+
+    public void setMemberNickName(String memberNickName) {
+        this.memberNickName = memberNickName;
     }
 }
