@@ -1,4 +1,4 @@
-package com.example.foodmap.service;
+package com.example.foodmap.foodmap.domain;
 
 import java.util.Base64;
 import java.util.List;
@@ -14,14 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.foodmap.dto.RestaurantDto;
-import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.model.RestaurantFavorite;
-import com.example.foodmap.model.RestaurantPhoto;
-import com.example.foodmap.model.RestaurantReview;
-import com.example.foodmap.repository.RestaurantFavoriteRepository;
-import com.example.foodmap.repository.RestaurantPhotoRepository;
-import com.example.foodmap.repository.RestaurantRepository;
-import com.example.foodmap.repository.RestaurantReviewRepository;
 
 @Service
 public class RestaurantService {

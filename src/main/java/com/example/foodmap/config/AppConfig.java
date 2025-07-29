@@ -9,7 +9,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.foodmap.member.domain.Member;
 import com.example.foodmap.member.domain.MemberRepository;
-import com.example.foodmap.model.Phone;
 
 import jakarta.annotation.PostConstruct;
 
@@ -38,14 +37,6 @@ public class AppConfig {
 		
 	}
 	
-	@Bean
-	Phone phone() {
-		Phone phone = new Phone();
-		phone.setId(101);
-		phone.setName("iPhone 17");
-		phone.setBrand("Apple");
-		return phone;
-	}
 
 
 }

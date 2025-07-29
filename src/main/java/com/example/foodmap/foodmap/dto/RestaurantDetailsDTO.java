@@ -1,9 +1,9 @@
 package com.example.foodmap.foodmap.dto;
 
-import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.model.RestaurantReview;
-
 import java.util.List;
+
+import com.example.foodmap.foodmap.domain.Restaurant;
+import com.example.foodmap.foodmap.domain.RestaurantReview;
 
 public class RestaurantDetailsDTO {
 

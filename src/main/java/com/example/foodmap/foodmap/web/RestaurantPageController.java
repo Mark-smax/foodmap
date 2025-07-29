@@ -9,9 +9,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.example.foodmap.foodmap.domain.RestaurantReview;
+import com.example.foodmap.foodmap.domain.RestaurantService;
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
-import com.example.foodmap.model.RestaurantReview;
-import com.example.foodmap.service.RestaurantService;
 
 import jakarta.servlet.http.HttpSession;
 

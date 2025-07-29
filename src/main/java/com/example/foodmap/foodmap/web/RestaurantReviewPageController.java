@@ -1,10 +1,14 @@
 package com.example.foodmap.foodmap.web;
 
-import com.example.foodmap.service.RestaurantReviewService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.foodmap.foodmap.domain.RestaurantReviewService;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/review")

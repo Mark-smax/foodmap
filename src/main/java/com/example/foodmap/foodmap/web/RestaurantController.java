@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.foodmap.foodmap.domain.RestaurantService;
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.foodmap.dto.RestaurantDto;
-import com.example.foodmap.service.RestaurantService;
 
 @RestController
 @RequestMapping("/api/restaurants")

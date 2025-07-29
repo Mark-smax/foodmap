@@ -1,10 +1,11 @@
-package com.example.foodmap.repository;
+package com.example.foodmap.foodmap.domain;
 
-import com.example.foodmap.model.RestaurantPhoto;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.example.foodmap.foodmap.domain.RestaurantPhoto;
 
 @Repository
 public interface RestaurantPhotoRepository extends JpaRepository<RestaurantPhoto, Long> {

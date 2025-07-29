@@ -1,4 +1,4 @@
-package com.example.foodmap.model;
+package com.example.foodmap.foodmap.domain;
 
 
 import org.springframework.stereotype.Component;

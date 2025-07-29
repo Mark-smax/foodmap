@@ -1,18 +1,23 @@
 package com.example.foodmap.foodmap.web;
 
-import com.example.foodmap.model.Restaurant;
-import com.example.foodmap.model.RestaurantPhoto;
-import com.example.foodmap.repository.RestaurantPhotoRepository;
-import com.example.foodmap.service.RestaurantService;
+import java.io.IOException;
 
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
+import com.example.foodmap.foodmap.domain.Restaurant;
+import com.example.foodmap.foodmap.domain.RestaurantPhoto;
+import com.example.foodmap.foodmap.domain.RestaurantPhotoRepository;
+import com.example.foodmap.foodmap.domain.RestaurantService;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/admin/restaurant")

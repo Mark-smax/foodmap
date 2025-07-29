@@ -1,13 +1,14 @@
-package com.example.foodmap.repository;
+package com.example.foodmap.foodmap.domain;
 
-import com.example.foodmap.model.Restaurant;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import com.example.foodmap.foodmap.domain.Restaurant;
 
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 

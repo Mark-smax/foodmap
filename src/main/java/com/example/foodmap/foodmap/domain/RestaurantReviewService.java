@@ -1,12 +1,10 @@
-package com.example.foodmap.service;
-
-import com.example.foodmap.model.RestaurantReview;
-import com.example.foodmap.repository.RestaurantReviewRepository;
-
-import jakarta.transaction.Transactional;
-import org.springframework.stereotype.Service;
+package com.example.foodmap.foodmap.domain;
 
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class RestaurantReviewService {
