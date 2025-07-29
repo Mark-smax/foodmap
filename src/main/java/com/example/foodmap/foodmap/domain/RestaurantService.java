@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.foodmap.dto.RestaurantDto;
+import com.example.foodmap.member.domain.Member;
+import com.example.foodmap.member.domain.MemberRepository;
 
 @Service
 public class RestaurantService {
@@ -22,15 +24,18 @@ public class RestaurantService {
     private final RestaurantPhotoRepository photoRepository;
     private final RestaurantReviewRepository reviewRepository;
     private final RestaurantFavoriteRepository favoriteRepository;
+    private final MemberRepository memberRepository;
 
     public RestaurantService(RestaurantRepository restaurantRepository,
                              RestaurantPhotoRepository photoRepository,
                              RestaurantReviewRepository reviewRepository,
-                             RestaurantFavoriteRepository favoriteRepository) {
+                             RestaurantFavoriteRepository favoriteRepository,
+                             MemberRepository memberRepository) {
         this.restaurantRepository = restaurantRepository;
         this.photoRepository = photoRepository;
         this.reviewRepository = reviewRepository;
         this.favoriteRepository = favoriteRepository;
+        this.memberRepository = memberRepository;
     }
 
     public Page<RestaurantDto> searchRestaurants(String county, Double minRating, String type, Pageable pageable, Long memberId) {
@@ -68,18 +73,32 @@ public class RestaurantService {
             setAverageRating(r);
             String thumbnail = getRandomThumbnail(r.getId());
             boolean isFav = memberId != null && favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
-            return new RestaurantDto(r.getId(), r.getName(), r.getAddress(), r.getPhone(), r.getCounty(), r.getType(), r.getAvgRating(), thumbnail, isFav);
+            String uploaderName = getUploaderNickname(r.getCreatedBy());
+            return new RestaurantDto(r.getId(), r.getName(), r.getAddress(), r.getPhone(), r.getCounty(),
+                    r.getType(), r.getAvgRating(), thumbnail, isFav, uploaderName);
         }).collect(Collectors.toList());
 
-        // ⭐ 收藏優先排序，再依星等高低
         dtoList.sort((a, b) -> {
             if (a.isFavorite != b.isFavorite) {
-                return Boolean.compare(b.isFavorite, a.isFavorite); // true 優先
+                return Boolean.compare(b.isFavorite, a.isFavorite);
             }
-            return Double.compare(b.avgRating, a.avgRating); // 星等高優先
+            return Double.compare(b.avgRating, a.avgRating);
         });
 
         return new PageImpl<>(dtoList, page.getPageable(), page.getTotalElements());
+    }
+
+    private String getUploaderNickname(Integer memberId) {
+        if (memberId == null) return "匿名";
+        return memberRepository.findById(memberId)
+                .map(member -> {
+                    try {
+                        return (String) member.getClass().getMethod("getMemberNickname").invoke(member);
+                    } catch (Exception e) {
+                        return "未知會員";
+                    }
+                })
+                .orElse("匿名");
     }
 
     private String getRandomThumbnail(Long restaurantId) {
@@ -107,6 +126,7 @@ public class RestaurantService {
             existing.setPhone(updated.getPhone());
             existing.setRating(updated.getRating());
             existing.setType(updated.getType());
+            existing.setKeywords(updated.getKeywords());
             return restaurantRepository.save(existing);
         } else {
             return null;
@@ -187,15 +207,12 @@ public class RestaurantService {
                 .limit(limit)
                 .collect(Collectors.toList());
     }
-    
+
     public Restaurant findById(Long id) {
         return restaurantRepository.findById(id).orElseThrow();
     }
 
     public void updateRestaurant(Restaurant restaurant) {
-        restaurantRepository.save(restaurant); // 因為 ID 存在，會自動變成更新
+        restaurantRepository.save(restaurant);
     }
-
-    
-
 }

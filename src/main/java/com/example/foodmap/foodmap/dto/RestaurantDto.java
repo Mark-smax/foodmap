@@ -7,12 +7,13 @@ public class RestaurantDto {
     public String phone;
     public String county;
     public String type;
-    public Double avgRating;  // ← 改成 public
+    public double avgRating;
     public String thumbnail;
-    public boolean isFavorite; // ← 改成 public
+    public boolean isFavorite;
+    public String uploaderNickname; // 🆕 新增上傳者暱稱
 
     public RestaurantDto(Long id, String name, String address, String phone, String county, String type,
-                         double avgRating, String thumbnail, boolean isFavorite) {
+                         double avgRating, String thumbnail, boolean isFavorite, String uploaderNickname) {
         this.id = id;
         this.name = name;
         this.address = address;
@@ -22,8 +23,8 @@ public class RestaurantDto {
         this.avgRating = avgRating;
         this.thumbnail = thumbnail;
         this.isFavorite = isFavorite;
+        this.uploaderNickname = uploaderNickname;
     }
-
 
     public Long getId() {
         return id;
@@ -95,5 +96,13 @@ public class RestaurantDto {
 
     public void setFavorite(boolean favorite) {
         isFavorite = favorite;
+    }
+
+    public String getUploaderNickname() {
+        return uploaderNickname;
+    }
+
+    public void setUploaderNickname(String uploaderNickname) {
+        this.uploaderNickname = uploaderNickname;
     }
 }

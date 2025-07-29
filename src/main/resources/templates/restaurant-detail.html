@@ -39,6 +39,8 @@
 <br>
   <p><strong>地址：</strong><span th:text="${restaurant.address}">地址</span></p>
   <p><strong>電話：</strong><span th:text="${restaurant.phone}">電話</span></p>
+<p class="card-text">👤 上傳者：<span th:text="${restaurant.uploaderNickname}"></span></p>
+
   <p><strong>平均星等：</strong>
   <span th:if="${#lists.size(reviews) > 0}"
         th:classappend="${restaurant.avgRating >= 4.5} ? 'text-warning fw-bold' : ''"
@@ -84,6 +86,7 @@
   </form>
 </div>
 </div>
+
 
       <p class="text-muted"><span th:text="${reviewTimes[stat.index]}">評論時間</span></p>
 

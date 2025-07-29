@@ -1,5 +1,7 @@
 package com.example.foodmap.foodmap.domain;
 
+import com.example.foodmap.member.domain.Member;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -27,6 +29,9 @@ public class Restaurant {
 
     @Transient
     private Double avgRating;
+    
+    @Column(name = "created_by")
+    private Integer createdBy; // 對應 member_id
 
     public Restaurant() {}
 
@@ -40,6 +45,13 @@ public class Restaurant {
     }
 
     // --- Getter/Setter ---
+    public Integer getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Integer createdBy) {
+        this.createdBy = createdBy;
+    }
 
     public Long getId() {
         return id;
