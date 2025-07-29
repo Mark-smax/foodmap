@@ -4,16 +4,19 @@ const foodData = {
 };
 
 const regionGroups = {
-  north: ['TWTPE', 'TWTAO', 'TWHSZ', 'TWNWT'],
-  central: ['TWNTC', 'TWCHY', 'TWYUN', 'TWMLI', 'TWTXG'],
-  south: ['TWTNN', 'TWKHH', 'TWPIF', 'TWCHN', 'TWWTN'],
+  north: ['TWTPE', 'TWTAO', 'TWHSZ', 'TWNWT', 'TWHSQ', 'TWKEE'],
+  central: ['TWNTP', 'TWCHY', 'TWYUN', 'TWMLI', 'TWTXG', 'TWNAN'],
+  south: ['TWTNN', 'TWKHH', 'TWPIF', 'TWCYI', 'TWCYQ'],
   east: ['TWHUA', 'TITNN', 'TWILN', 'TWTTT'],
-  islands: ['TWKNH', 'TWTTT', 'TWMAC', 'TWKIN']
+  islands: ['TWKNH', 'TWTTT', 'TWMAC', 'TWKIN', 'TWCHN', 'TWLIE']
 };
 
 const countyMap = {
   TWTPE: "台北市", TWTAO: "桃園市", TWHSZ: "新竹市", TWNWT: "新北市", TWPIF: "屏東縣",
-  TWKIN: "金門縣", TWTXG: "台中市", TWTTT: "台東縣", TWNTC: "台中市"
+  TWKIN: "金門縣", TWTXG: "台中市", TWTTT: "台東縣", TWNTP: "台中市", TWKEE: "基隆市",
+  TWCHY: "彰化縣", TWYUN: "雲林縣", TWMLI: "苗栗縣", TWTNN: "台南市", TWNAN: "南投縣",
+  TWKHH: "高雄市", TWCHN: "澎湖縣", TWHUA: "花蓮縣", TWHSQ: "新竹縣", TWCYI: "嘉義市",
+  TITNN: "台東市", TWILN: "宜蘭縣", TWMAC: "馬祖", TWCYQ: "嘉義縣", TWLIE: "連江縣"
 };
 
 function getRegionGroup(regionId) {
@@ -57,9 +60,14 @@ function renderCard(item, regionId) {
     ? 'data:image/jpeg;base64,' + item.thumbnail
     : 'https://via.placeholder.com/200x120?text=No+Image';
 
-  const ratingText = (item.avgRating !== undefined && item.avgRating !== null)
-    ? `<p class="card-text">⭐ 平均：${item.avgRating} 分</p>`
-    : '';
+  let ratingText = '';
+  if (item.avgRating !== undefined && item.avgRating !== null) {
+    if (item.avgRating === 0 || item.reviewCount === 0) {
+      ratingText = `<p class="card-text text-muted">尚未評分</p>`;
+    } else {
+      ratingText = `<p class="card-text">⭐ 平均：${item.avgRating} 分</p>`;
+    }
+  }
 
   const bookmark = item.favorite
     ? `<span style="color: red; font-size: 1.2em;">🔖</span> `
@@ -79,6 +87,7 @@ function renderCard(item, regionId) {
   card.appendChild(link);
   return card;
 }
+
 
 
 function countyToRegionId(countyName) {

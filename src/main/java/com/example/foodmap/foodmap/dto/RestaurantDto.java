@@ -7,7 +7,7 @@ public class RestaurantDto {
     public String phone;
     public String county;
     public String type;
-    public double avgRating;  // ← 改成 public
+    public Double avgRating;  // ← 改成 public
     public String thumbnail;
     public boolean isFavorite; // ← 改成 public
 

@@ -40,10 +40,13 @@
   <p><strong>地址：</strong><span th:text="${restaurant.address}">地址</span></p>
   <p><strong>電話：</strong><span th:text="${restaurant.phone}">電話</span></p>
   <p><strong>平均星等：</strong>
-    <span th:classappend="${restaurant.avgRating >= 4.5} ? 'text-warning fw-bold' : ''"
-          th:text="${restaurant.avgRating != null ? restaurant.avgRating : '尚無評分'}">0.0</span>
-    （<span th:text="${#lists.size(reviews)}">0</span> 則評論）
-  </p>
+  <span th:if="${#lists.size(reviews) > 0}"
+        th:classappend="${restaurant.avgRating >= 4.5} ? 'text-warning fw-bold' : ''"
+        th:text="${restaurant.avgRating}">4.2</span>
+  <span th:if="${#lists.size(reviews) == 0}">未評分</span>
+  （<span th:text="${#lists.size(reviews)}">0</span> 則評論）
+</p>
+
   <p><strong>收藏狀態：</strong>
     <span th:text="${favorite} ? '已收藏' : '尚未收藏'">尚未收藏</span>
   </p>
