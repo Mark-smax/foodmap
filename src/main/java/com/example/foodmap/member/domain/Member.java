@@ -1,15 +1,16 @@
 package com.example.foodmap.member.domain;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.example.foodmap.member.domain.enums.MemberRole;
+import com.example.foodmap.member.domain.enums.MemberStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -31,15 +32,18 @@ public class Member {
 	@Column(nullable = false)
 	private String memberPassword;
 
+	@Lob
 	private byte[] memberPhoto;
 
 	// 會員身費(管理員、一般、商家、供應商)
 	@Column(nullable = false)
-	private String memberRole;
+	@Enumerated(EnumType.STRING)
+	private MemberRole memberRole;
 
 	// 會員狀態(正常、審核中、刪除、停權)
 	@Column(nullable = false)
-	private String memberStatus;
+	@Enumerated(EnumType.STRING)
+	private MemberStatus memberStatus;
 
 //	以下為各自關聯表所需欄位
 //	請注意getters與setters是否有註解
@@ -97,19 +101,19 @@ public class Member {
 		this.memberPhoto = memberPhoto;
 	}
 
-	public String getMemberRole() {
+	public MemberRole getMemberRole() {
 		return memberRole;
 	}
 
-	public void setMemberRole(String memberRole) {
+	public void setMemberRole(MemberRole memberRole) {
 		this.memberRole = memberRole;
 	}
 
-	public String getMemberStatus() {
+	public MemberStatus getMemberStatus() {
 		return memberStatus;
 	}
 
-	public void setMemberStatus(String memberStatus) {
+	public void setMemberStatus(MemberStatus memberStatus) {
 		this.memberStatus = memberStatus;
 	}
 

@@ -9,6 +9,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.foodmap.member.domain.Member;
 import com.example.foodmap.member.domain.MemberRepository;
+import com.example.foodmap.member.domain.enums.MemberRole;
+import com.example.foodmap.member.domain.enums.MemberStatus;
 
 import jakarta.annotation.PostConstruct;
 
@@ -25,8 +27,8 @@ public class AppConfig {
 			member.setMemberName("admin1");
 			member.setMemberEmail("admin@mail");
 			member.setMemberPassword("admin");
-			member.setMemberRole("admin");
-			member.setMemberStatus("正常");
+			member.setMemberRole(MemberRole.ADMIN);
+			member.setMemberStatus(MemberStatus.ACTIVE);
 			memberRepo.save(member);
 		}
 	} 

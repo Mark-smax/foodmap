@@ -21,8 +21,8 @@
 					</li>
 					<li class="nav-item" th:if="!${session.loginMemberName}"><a
 						class="nav-link" th:href="@{/member/add}">註冊</a></li>
-					<li class="nav-item" th:if="${session.loginMemberRoles eq 'admin'}">
-						<a class="nav-link" th:href="@{/admin/restaurant/create}">新增美食地圖</a>
+					<li class="nav-item" th:if="${session.loginMemberRoles != null and session.loginMemberRoles.getDisplayName() == '管理員'}">
+						<a class="nav-link" th:href="@{/create}">新增美食地圖</a>
 					</li>
 					<li class="nav-item" th:if="!${session.loginMemberName}"><a
 						class="nav-link" th:href="@{/member/login}">登入</a></li>

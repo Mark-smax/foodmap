@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org/">
 <head>
 <meta charset="UTF-8">
-<title>會員註冊</title>
+<title>帳號申請</title>
 <style>
 .preview-img {
 	width: 120px;
@@ -18,17 +18,27 @@
 	<div th:replace="~{layout/navbar}"></div>
 
 	<div class="container">
-		<h1>會員註冊</h1>
+		<h1>商家/供應商帳號申請</h1>
 		
 		<div class="card">
-			<div class="card-header">請輸入資料，進行註冊</div>
+			<div class="card-header">請輸入資料，進行申請</div>
 			<div class="card-body">
-				<form th:action="@{/member/addPost}" method="post" th:if="!${registerMember}" enctype="multipart/form-data">
+				<form th:action="@{/member/add/applyPost}" method="post" th:if="!${registerMember}" enctype="multipart/form-data">
 					
-					<label class="form-label">姓名</label>
+					<div>
+						<label class="form-label">申請類別</label> <br>
+						
+						<input type="radio" name="memberRole" value="MERCHANT" required title="請選擇一個申請類別">
+						<label class="form-label">商家</label>
+						
+						<input type="radio" name="memberRole" value="SUPPLIER">
+						<label class="form-label">供應商</label>
+					</div>
+					
+					<label class="form-label">負責人姓名</label>
 					<input class="form-control" name="memberName" placeholder="請輸入姓名" required> <br>
 					
-					<label class="form-label">使用者暱稱</label>
+					<label class="form-label">商家/供應商名稱</label>
 					<input class="form-control" name="memberNickName" placeholder="請輸入使用者暱稱" required> <br>
 					
 					<label class="form-label">Email</label>
@@ -43,14 +53,24 @@
 					
 					<input class="btn btn-primary" value="送出" type="submit">
 					<a th:href="@{/}" class="btn btn-danger">取消</a>
-					<a th:href="@{/member/add/apply}" class="btn btn-success">商家/供應商 申請</a>
 				</form>
 				
-				<form th:action="@{/member/addPost}" method="post" th:if="${registerMember}" th:object="${registerMember}" enctype="multipart/form-data">
-					<label class="form-label">姓名</label>
+				<form th:action="@{/member/add/applyPost}" method="post" th:if="${registerMember}" th:object="${registerMember}" enctype="multipart/form-data">
+					
+					<div>
+						<label class="form-label">申請類別</label> <br>
+						
+						<input type="radio" th:field="*{memberRole}" value="MERCHANT" required title="請選擇一個申請類別">
+						<label class="form-label">商家</label>
+						
+						<input type="radio" th:field="*{memberRole}" value="SUPPLIER">
+						<label class="form-label">供應商</label>
+					</div>
+					
+					<label class="form-label">負責人姓名</label>
 					<input class="form-control" name="memberName" placeholder="請輸入姓名" required th:value="*{memberName}"> <br>
 					
-					<label class="form-label">使用者暱稱</label>
+					<label class="form-label">商家/供應商名稱</label>
 					<input class="form-control" name="memberNickName" placeholder="請輸入使用者暱稱" required th:value="*{memberNickName}"> <br>
 					
 					<label class="form-label">Email</label>
@@ -66,7 +86,6 @@
 					
 					<input class="btn btn-primary" value="送出" type="submit">
 					<a th:href="@{/}" class="btn btn-danger">取消</a>
-					<a th:href="@{/member/add/apply}" class="btn btn-success">商家/供應商 申請</a>
 				</form>
 			</div>
 		</div>

@@ -12,6 +12,8 @@
 <h1>首頁 ok666999 😊😊✔✔</h1>
 
 <div th:if="${session.loginMemberName}">安安你好: <span th:text="${session.loginMemberName}"></span></div>
+<div th:if="${session.loginMemberId}"> <span th:text="${session.loginMemberId}"></span></div>
+<div th:if="${session.loginMemberRoles}"> <span th:text="${session.loginMemberRoles}"></span></div>
 
 <ul>
  <li><a th:href="@{/employee/add}">新增員工</a></li>
@@ -21,9 +23,9 @@
 </div>
 
 <!-- ✅ 加入 th:inline="javascript" -->
-<script th:inline="javascript">
-  sessionStorage.setItem("loginMemberId", [[${session.loginMemberId}]]);
-</script>
+<!-- <script th:inline="javascript"> -->
+<!--   sessionStorage.setItem("loginMemberId", [[${session.loginMemberId}]]); -->
+<!-- </script> -->
 
 
 </body>

@@ -20,7 +20,7 @@ import com.example.foodmap.foodmap.domain.RestaurantService;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
-@RequestMapping("/admin/restaurant")
+//@RequestMapping("/admin/restaurant")
 public class AdminRestaurantController {
 
     private final RestaurantService restaurantService;
@@ -42,7 +42,7 @@ public class AdminRestaurantController {
             return "redirect:/login";
         }
 
-        if (!"admin".equals(roleObj.toString())) {
+        if (!"ADMIN".equals(roleObj.toString())) {
             redirectAttrs.addFlashAttribute("error", "您沒有權限進入此頁面！");
             return "redirect:/";
         }
@@ -51,7 +51,7 @@ public class AdminRestaurantController {
     }
 
     // 處理表單送出
-    @PostMapping("/create")
+    @PostMapping("/createPost")
     public String createRestaurant(@RequestParam String name,
                                    @RequestParam String address,
                                    @RequestParam String phone,

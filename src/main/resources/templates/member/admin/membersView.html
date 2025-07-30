@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8">
+<title>帳號管理</title>
+<style>
+	body {
+		margin: 0;
+	}
+	.main-content {
+		flex-grow: 1;
+		padding: 20px;
+	}
+</style>
+</head>
+<body>
+	<div class="d-flex">
+		<div th:replace="~{layout/sidebars}"></div>
+		
+		<div class="main-content">
+				<table>
+					<thead>
+						<tr class="table-active">
+							<th>名稱</th>
+							<th>暱稱</th>
+							<th>Email</th>
+							<th>身分</th>
+							<th>狀態</th>
+							<th>操作</th>
+						</tr>
+					</thead>
+					<tbody>
+						<th:block th:each="member:${page.content}">
+							<tr>
+								<th th:text="${member.memberName}"></th>
+								<th th:text="${member.memberNickName}"></th>
+								<th th:text="${member.memberEmail}"></th>
+								<th th:text="${member.memberRole.getDisplayName}"></th>
+								<th th:text="${member.memberStatus.getDisplayName}"></th>
+								<th>
+									操作
+									<th:block th:if="${member.memberStatus.getDisplayName} == '審核中'">
+										<a th:href="@{/admin/members/approve(id=${member.memberId})}">允許</a>
+										<a th:href="@{/admin/members/reject(id=${member.memberId})}">拒絕</a>
+									</th:block>
+								</th>
+							</tr>
+						</th:block>
+					</tbody>
+				</table>
+			
+			<ul class="pagination">
+	
+				<th:block th:switch="${page.getNumber} + 1  == 1">
+					<li class="page-item" th:case="${false}"><a class="page-link"
+						th:href="@{/admin/members(p=${page.getNumber})}">Previous</a></li>
+	
+					<li class="page-item disabled" th:case="${true}"><a
+						class="page-link">Previous</a></li>
+				</th:block>
+	
+				<th:block
+					th:each="pageNum : ${#numbers.sequence(1, page.totalPages)}">
+					<th:block th:switch="${page.getNumber} + 1  == ${pageNum}">
+						<li class="page-item" th:case="${false}"><a class="page-link"
+							th:href="@{/admin/members(p=${pageNum})}" th:text="${pageNum}"></a></li>
+						<li class="page-item" th:case="${true}"><a
+							class="page-link active" aria-current="page"
+							th:href="@{/admin/members(p=${pageNum})}" th:text="${pageNum}"></a></li>
+					</th:block>
+				</th:block>
+	
+				<th:block th:switch="${page.getNumber} + 1  == ${page.totalPages}">
+					<li class="page-item" th:case="${false}"><a class="page-link"
+						th:href="@{/admin/members(p=${page.getNumber}+1+1)}">Next</a></li>
+					<li class="page-item  disabled" th:case="${true}"><a
+						class="page-link">Next</a></li>
+				</th:block>
+			</ul>
+			
+		</div>
+	</div>
+	
+</body>
+</html>
