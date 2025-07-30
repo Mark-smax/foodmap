@@ -20,7 +20,7 @@ import com.example.foodmap.foodmap.domain.RestaurantService;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
-//@RequestMapping("/admin/restaurant")
+@RequestMapping("/admin/restaurant")
 public class AdminRestaurantController {
 
     private final RestaurantService restaurantService;
@@ -32,7 +32,7 @@ public class AdminRestaurantController {
         this.photoRepository = photoRepository;
     }
 
-    // 顯示新增表單
+    // 顯示新增餐廳表單
     @GetMapping("/create")
     public String showCreateForm(HttpSession session, RedirectAttributes redirectAttrs, Model model) {
         Object roleObj = session.getAttribute("loginMemberRoles");
@@ -50,20 +50,20 @@ public class AdminRestaurantController {
         return "restaurant-create";
     }
 
-    // 處理表單送出
+    // 處理新增餐廳表單送出
     @PostMapping("/createPost")
     public String createRestaurant(@RequestParam String name,
                                    @RequestParam String address,
                                    @RequestParam String phone,
                                    @RequestParam String county,
                                    @RequestParam(required = false) String[] type,
-                                   @RequestParam(required = false) String keywords, // ✅ 新增關鍵字欄位
+                                   @RequestParam(required = false) String keywords,
                                    @RequestParam(required = false) MultipartFile[] photos,
                                    RedirectAttributes redirectAttributes,
                                    HttpSession session) {
 
         Object roleObj = session.getAttribute("loginMemberRoles");
-        if (roleObj == null || !"admin".equals(roleObj.toString())) {
+        if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttributes.addFlashAttribute("error", "您沒有權限執行此操作！");
             return "redirect:/login";
         }
@@ -77,12 +77,11 @@ public class AdminRestaurantController {
         if (type != null) {
             restaurant.setType(String.join(",", type));
         }
-        restaurant.setKeywords(keywords); // ✅ 寫入關鍵字欄位
+        restaurant.setKeywords(keywords);
 
-        // 儲存餐廳
         Restaurant saved = restaurantService.createRestaurant(restaurant);
 
-        // 儲存照片
+        // 儲存圖片
         if (photos != null) {
             for (MultipartFile photo : photos) {
                 if (!photo.isEmpty()) {
@@ -101,20 +100,22 @@ public class AdminRestaurantController {
         redirectAttributes.addFlashAttribute("success", "餐廳新增成功！");
         return "redirect:/admin/restaurant/create";
     }
-    
+
+    // 顯示編輯餐廳表單
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, HttpSession session, Model model, RedirectAttributes redirectAttrs) {
         Object roleObj = session.getAttribute("loginMemberRoles");
-        if (roleObj == null || !"admin".equals(roleObj.toString())) {
+        if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttrs.addFlashAttribute("error", "您沒有權限執行此操作！");
             return "redirect:/login";
         }
 
         Restaurant restaurant = restaurantService.getRestaurantById(id);
         model.addAttribute("restaurant", restaurant);
-        return "restaurant-edit"; // templates/restaurant-edit.html
+        return "restaurant-edit";
     }
-    
+
+    // 處理更新餐廳表單送出
     @PostMapping("/update")
     public String updateRestaurant(@RequestParam Long id,
                                    @RequestParam String name,
@@ -127,7 +128,7 @@ public class AdminRestaurantController {
                                    HttpSession session) {
 
         Object roleObj = session.getAttribute("loginMemberRoles");
-        if (roleObj == null || !"admin".equals(roleObj.toString())) {
+        if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttributes.addFlashAttribute("error", "您沒有權限執行此操作！");
             return "redirect:/login";
         }
@@ -147,12 +148,13 @@ public class AdminRestaurantController {
         return "redirect:/admin/restaurant/edit/" + id;
     }
 
+    // 處理刪除餐廳
     @PostMapping("/delete/{id}")
     public String deleteRestaurant(@PathVariable Long id,
                                    HttpSession session,
                                    RedirectAttributes redirectAttrs) {
         Object roleObj = session.getAttribute("loginMemberRoles");
-        if (roleObj == null || !"admin".equals(roleObj.toString())) {
+        if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttrs.addFlashAttribute("error", "您沒有權限執行此操作！");
             return "redirect:/login";
         }
