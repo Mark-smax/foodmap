@@ -69,7 +69,7 @@ function renderCard(item, regionId) {
     }
   }
 
-  const bookmark = item.favorite
+  const bookmark = item.favorite === true
     ? `<span style="color: red; font-size: 1.2em;">🔖</span> `
     : '';
 
@@ -104,12 +104,14 @@ function loadBackendRestaurantsByParams(params = {}, regionId = null) {
   const memberId = sessionStorage.getItem("loginMemberId");
   if (memberId) {
     params.memberId = memberId;
+    console.log('附加 memberId:', memberId);
   }
 
   Object.entries(params).forEach(([key, val]) => {
     if (val) url.searchParams.append(key, val);
   });
 
+  console.log("載入 API：", url.toString());
   fetch(url)
     .then(res => res.json())
     .then(data => {
