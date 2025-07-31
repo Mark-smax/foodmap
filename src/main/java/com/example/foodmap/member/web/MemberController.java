@@ -108,6 +108,7 @@ public class MemberController {
 		case USER: {
 			// 重新導向首頁
 			return "redirect:/";
+//			return "member/admin/adminView";
 		}
 		// 商家
 		case MERCHANT: {

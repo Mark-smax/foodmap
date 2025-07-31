@@ -19,6 +19,7 @@ public class AdminController {
 	// 管理者頁面
 	@GetMapping("/admin")
 	public String admin() {
+		System.out.println("進入 admin controller");
 		return "member/admin/adminView";
 	}
 
