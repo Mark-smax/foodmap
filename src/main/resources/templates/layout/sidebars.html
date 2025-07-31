@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8">
+<title></title>
+<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" />
+</head>
+<body>
+	<div class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark min-vh-100"
+		style="width: 280px;">
+		
+		<a href="/admin"
+			class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+			<svg class="bi pe-none me-2" width="40" height="32"></svg> <span class="fs-4">管理者介面</span>
+		</a>
+		<hr>
+		
+		<ul class="nav nav-pills flex-column mb-auto">
+		
+			<li class="nav-item">
+				<a href="#" class="nav-link active" aria-current="page"> Home</a>
+			</li>
+			
+			<li>
+				<a th:href="@{/admin/members}" class="nav-link text-white">帳號管理</a>
+			</li>
+			
+		</ul>
+		<hr>
+		<div class="dropdown">
+			<a th:href="@{/logout}" class="btn btn-danger">登出</a>
+		</div>
+	</div>
+</body>
+</html>
