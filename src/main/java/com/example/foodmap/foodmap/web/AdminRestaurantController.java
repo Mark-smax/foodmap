@@ -102,11 +102,10 @@ public class AdminRestaurantController {
     }
 
     // 顯示編輯餐廳表單
-    @GetMapping("/admin/restaurant/edit/{id}")
+    @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, HttpSession session, Model model, RedirectAttributes redirectAttrs) {
         Object roleObj = session.getAttribute("loginMemberRoles");
-        System.out.println(roleObj);
-        if (roleObj == null || !"管理員".equals(roleObj.toString())) {
+        if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttrs.addFlashAttribute("error", "您沒有權限執行此操作！");
             return "redirect:/login";
         }
