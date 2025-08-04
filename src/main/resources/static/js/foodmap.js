@@ -69,12 +69,10 @@ function renderCard(item, regionId) {
     }
   }
 
-  const bookmark = item.favorite === true ? '🔖' : '';
-    
-
+  const bookmark = item.favorite === true ? '🔖 ' : '';
 
   link.innerHTML = `
-    <img src="${imgSrc}" alt="${item.name}" class="card-img-top" />
+    <img src="${imgSrc}" alt="${item.name}" class="card-img-top" style="height: 120px; object-fit: cover;" />
     <div class="card-body">
       <h5 class="card-title">${bookmark}${item.name}</h5>
       <p class="card-text">${item.description || item.type || ''}</p>
@@ -87,6 +85,7 @@ function renderCard(item, regionId) {
   card.appendChild(link);
   return card;
 }
+
 
 
 
