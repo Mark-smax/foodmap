@@ -69,9 +69,9 @@ function renderCard(item, regionId) {
     }
   }
 
-  const bookmark = item.favorite === true
-    ? `<span style="color: red; font-size: 1.2em;">🔖</span> `
-    : '';
+  const bookmark = item.favorite === true ? '🔖' : '';
+    
+
 
   link.innerHTML = `
     <img src="${imgSrc}" alt="${item.name}" class="card-img-top" />

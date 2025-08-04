@@ -1,16 +1,20 @@
 package com.example.foodmap.foodmap.dto;
 
 public class RestaurantDto {
-    public Long id;
-    public String name;
-    public String address;
-    public String phone;
-    public String county;
-    public String type;
-    public double avgRating;
-    public String thumbnail;
-    public boolean isFavorite;
-    public String uploaderNickname; // 🆕 新增上傳者暱稱
+    private Long id;
+    private String name;
+    private String address;
+    private String phone;
+    private String county;
+    private String type;
+    private double avgRating;
+    private String thumbnail;
+    private boolean isFavorite;
+    private String uploaderNickname;
+
+    // ✅ 無參數建構子（必要）
+    public RestaurantDto() {
+    }
 
     public RestaurantDto(Long id, String name, String address, String phone, String county, String type,
                          double avgRating, String thumbnail, boolean isFavorite, String uploaderNickname) {

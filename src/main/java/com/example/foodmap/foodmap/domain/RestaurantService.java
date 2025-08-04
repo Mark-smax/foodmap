@@ -88,11 +88,12 @@ public class RestaurantService {
             );
         }).collect(Collectors.toList());
 
+        // ★ 重點：收藏在上，評分高在後
         dtoList.sort((a, b) -> {
-            if (a.isFavorite != b.isFavorite) {
-                return Boolean.compare(b.isFavorite, a.isFavorite); // 收藏在上
+            if (a.isFavorite() != b.isFavorite()) {
+                return Boolean.compare(b.isFavorite(), a.isFavorite()); // 收藏優先
             }
-            return Double.compare(b.avgRating, a.avgRating); // 高評分在上
+            return Double.compare(b.getAvgRating(), a.getAvgRating()); // 評分高優先
         });
 
         return new PageImpl<>(dtoList, page.getPageable(), page.getTotalElements());
