@@ -46,6 +46,22 @@ public class RestaurantReviewPageController {
         reviewService.setReviewHidden(reviewId, true); // 將評論設為隱藏
         return "redirect:/restaurant-detail?id=" + restaurantId;
     }
+    
+    @PostMapping("/unhide")
+    public String unhideReview(@RequestParam Long reviewId,
+                               @RequestParam Long restaurantId,
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) {
+
+        MemberRole role = (MemberRole) session.getAttribute("loginMemberRoles");
+        if (role != MemberRole.ADMIN) {
+            redirectAttributes.addFlashAttribute("error", "您沒有權限");
+            return "redirect:/restaurant-detail?id=" + restaurantId;
+        }
+
+        reviewService.setReviewHidden(reviewId, false); // ✅ 設定為未隱藏
+        return "redirect:/restaurant-detail?id=" + restaurantId;
+    }
 
     /**
      * 🗑️ 刪除評論（只能本人）

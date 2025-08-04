@@ -69,14 +69,25 @@
 
       <!-- ✅ 隱藏評論 -->
       <div th:if="${r.isHidden == true}">
-        <p th:if="${loginMemberId == r.memberId or session.loginMemberRoles.displayName == '管理員'}">
-          <i class="text-muted">此留言已被管理員設為隱藏：</i><br>
-          <i th:text="${r.comment}"></i>
-        </p>
-        <p th:if="${!(loginMemberId == r.memberId or session.loginMemberRoles.displayName == '管理員')}">
-          <i class="text-muted">此留言已被管理員隱藏</i>
-        </p>
-      </div>
+  <p th:if="${loginMemberId == r.memberId or session.loginMemberRoles.displayName == '管理員'}">
+    <i class="text-muted">此留言已被管理員設為隱藏：</i><br>
+    <i th:text="${r.comment}"></i>
+  </p>
+  <p th:if="${!(loginMemberId == r.memberId or session.loginMemberRoles.displayName == '管理員')}">
+    <i class="text-muted">此留言已被管理員隱藏</i>
+  </p>
+
+  <!-- ✅ 管理員取消隱藏按鈕 -->
+  <div th:if="${session.loginMemberRoles.displayName == '管理員'}">
+    <form th:action="@{/review/unhide}" method="post" class="d-inline mt-2">
+      <input type="hidden" name="reviewId" th:value="${r.id}" />
+      <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
+      <button type="submit" class="btn btn-sm btn-secondary">取消隱藏</button>
+    </form>
+  </div>
+</div>
+
+      
 
       <!-- ✅ 正常顯示評論 -->
       <div th:if="${r.isHidden != true}">
