@@ -10,7 +10,6 @@
       margin: 5px;
       border-radius: 10px;
     }
-
     .review-item {
       padding: 10px;
       border-bottom: 1px solid #ccc;
@@ -21,11 +20,12 @@
   <div th:replace="~{layout/navbar}"></div>
 
   <h1 class="mb-3" th:text="${restaurant.name}">餐廳名稱</h1>  
-<p><strong>關鍵字：</strong>
-  <span th:each="tag : ${#strings.arraySplit(restaurant.keywords, ',')}"
-        class="badge bg-secondary me-1" th:text="${tag}">標籤</span>
-</p>
-  <!-- 管理員操作區塊 -->
+  <p><strong>關鍵字：</strong>
+    <span th:each="tag : ${#strings.arraySplit(restaurant.keywords, ',')}"
+          class="badge bg-secondary me-1" th:text="${tag}">標籤</span>
+  </p>
+
+  <!-- ✅ 管理員操作區塊 -->
   <div th:if="${session.loginMemberRoles.displayName == '管理員'}" class="mt-3">
     <a th:href="@{/admin/restaurant/edit/{id}(id=${restaurant.id})}" class="btn btn-warning">修改餐廳資訊</a>
     <form th:action="@{/admin/restaurant/delete/{id}(id=${restaurant.id})}" method="post" class="d-inline"
@@ -43,7 +43,7 @@
   <br>
   <p><strong>地址：</strong><span th:text="${restaurant.address}">地址</span></p>
   <p><strong>電話：</strong><span th:text="${restaurant.phone}">電話</span></p>
-  <p class="card-text">👤 上傳者：<span th:text="${restaurant.uploaderNickname}"></span></p>  <!-- 顯示上傳者的暱稱 -->
+  <p class="card-text">👤 上傳者：<span th:text="${restaurant.uploaderNickname}"></span></p>
   <p><strong>平均星等：</strong>
     <span th:if="${#lists.size(reviews) > 0}"
           th:classappend="${restaurant.avgRating >= 4.5} ? 'text-warning fw-bold' : ''"
@@ -64,24 +64,24 @@
   <h4 class="mt-4">網友評論</h4>
   <div class="mt-2">
     <div class="review-item" th:each="r, stat : ${reviews}">
-      <p><strong>暱稱：</strong><span th:text="${r.memberNickName}">訪客</span></p> <!-- 顯示評論者暱稱 -->
+      <p><strong>暱稱：</strong><span th:text="${r.memberNickName}">訪客</span></p>
       <p><strong>星等：</strong><span th:text="${r.rating}">4</span></p>
-    
-      <!-- 隱藏評論 -->
+
+      <!-- ✅ 隱藏評論 -->
       <div th:if="${r.isHidden == true}">
-        <p th:if="${loginMemberId == r.member.memberId}">
+        <p th:if="${loginMemberId == r.memberId or session.loginMemberRoles.displayName == '管理員'}">
           <i class="text-muted">此留言已被管理員設為隱藏：</i><br>
           <i th:text="${r.comment}"></i>
         </p>
-        <p th:if="${loginMemberId != r.member.memberId}">
+        <p th:if="${!(loginMemberId == r.memberId or session.loginMemberRoles.displayName == '管理員')}">
           <i class="text-muted">此留言已被管理員隱藏</i>
         </p>
       </div>
 
-      <!-- 正常顯示評論 -->
+      <!-- ✅ 正常顯示評論 -->
       <div th:if="${r.isHidden != true}">
         <p th:text="${r.comment}">評論內容</p>
-        <div th:if="${session.loginMemberRoles eq 'admin' and !r.isHidden}">
+        <div th:if="${session.loginMemberRoles.displayName == '管理員'}">
           <form th:action="@{/review/hide}" method="post" class="d-inline ms-2">
             <input type="hidden" name="reviewId" th:value="${r.id}" />
             <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
@@ -92,9 +92,8 @@
 
       <p class="text-muted"><span th:text="${reviewTimes[stat.index]}">評論時間</span></p>
 
-      <!-- 編輯與刪除：只有自己且留言未被隱藏才能顯示 -->
-      <div th:if="${loginMemberId != null and loginMemberId == r.member.memberId}">
-        <!-- 編輯表單 -->
+      <!-- ✅ 編輯與刪除：僅本人可見 -->
+      <div th:if="${loginMemberId != null and loginMemberId == r.memberId}">
         <form th:action="@{/review/edit}" method="post" class="d-inline">
           <input type="hidden" name="reviewId" th:value="${r.id}" />
           <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />
@@ -102,8 +101,6 @@
           <input type="text" name="comment" th:value="${r.comment}" required class="form-control d-inline w-auto" />
           <button type="submit" class="btn btn-sm btn-success">更新</button>
         </form>
-
-        <!-- 刪除表單 -->
         <form th:action="@{/review/delete}" method="post" class="d-inline ms-2">
           <input type="hidden" name="reviewId" th:value="${r.id}" />
           <input type="hidden" name="restaurantId" th:value="${restaurant.id}" />

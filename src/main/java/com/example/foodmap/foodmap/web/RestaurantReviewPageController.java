@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.example.foodmap.member.domain.enums.MemberRole;
+
 
 import com.example.foodmap.foodmap.domain.RestaurantReviewService;
 
@@ -34,8 +36,9 @@ public class RestaurantReviewPageController {
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
 
-        String role = (String) session.getAttribute("loginMemberRoles");
-        if (!"admin".equals(role)) {
+    	MemberRole role = (MemberRole) session.getAttribute("loginMemberRoles");
+    	if (role != MemberRole.ADMIN) {
+
             redirectAttributes.addFlashAttribute("error", "您沒有權限");
             return "redirect:/restaurant-detail?id=" + restaurantId;
         }
