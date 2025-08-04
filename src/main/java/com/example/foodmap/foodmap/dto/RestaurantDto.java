@@ -1,5 +1,7 @@
 package com.example.foodmap.foodmap.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class RestaurantDto {
     private Long id;
     private String name;
@@ -9,7 +11,10 @@ public class RestaurantDto {
     private String type;
     private double avgRating;
     private String thumbnail;
+
+    @JsonProperty("isFavorite") // 🔥 確保 JSON 內欄位是 "isFavorite"
     private boolean isFavorite;
+
     private String uploaderNickname;
 
     // ✅ 無參數建構子（必要）

@@ -59,7 +59,9 @@ function renderCard(item, regionId) {
   const imgSrc = item.thumbnail
     ? 'data:image/jpeg;base64,' + item.thumbnail
     : 'https://via.placeholder.com/200x120?text=No+Image';
-	console.log("收藏狀態:", item.name, item.favorite);
+
+  console.log("收藏狀態:", item.name, item.isFavorite);
+
   let ratingText = '';
   if (item.avgRating !== undefined && item.avgRating !== null) {
     if (item.avgRating === 0 || item.reviewCount === 0) {
@@ -69,7 +71,8 @@ function renderCard(item, regionId) {
     }
   }
 
-  const bookmark = item.favorite === true ? '🔖' : '';
+  // ✅ 修正判斷：支援布林或字串的 true
+  const bookmark = item.isFavorite === true || item.isFavorite === 'true' ? '🔖 ' : '';
 
   link.innerHTML = `
     <img src="${imgSrc}" alt="${item.name}" class="card-img-top" style="height: 120px; object-fit: cover;" />
@@ -83,8 +86,13 @@ function renderCard(item, regionId) {
   `;
 
   card.appendChild(link);
+
+  console.log('顯示卡片 HTML:', card.innerHTML);
+
   return card;
 }
+
+
 
 
 

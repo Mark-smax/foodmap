@@ -72,7 +72,13 @@ public class RestaurantService {
         List<RestaurantDto> dtoList = page.getContent().stream().map(r -> {
             setAverageRating(r);
             String thumbnail = getRandomThumbnail(r.getId());
-            boolean isFav = memberId != null && favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
+
+            boolean isFav = false;
+            if (memberId != null) {
+                Integer memberIdInt = memberId.intValue();
+                isFav = favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberIdInt);
+            }
+
             String uploaderName = getUploaderNickname(r.getCreatedBy());
             return new RestaurantDto(
                     r.getId(),
@@ -88,12 +94,11 @@ public class RestaurantService {
             );
         }).collect(Collectors.toList());
 
-        // ★ 重點：收藏在上，評分高在後
         dtoList.sort((a, b) -> {
             if (a.isFavorite() != b.isFavorite()) {
-                return Boolean.compare(b.isFavorite(), a.isFavorite()); // 收藏優先
+                return Boolean.compare(b.isFavorite(), a.isFavorite());
             }
-            return Double.compare(b.getAvgRating(), a.getAvgRating()); // 評分高優先
+            return Double.compare(b.getAvgRating(), a.getAvgRating());
         });
 
         return new PageImpl<>(dtoList, page.getPageable(), page.getTotalElements());
@@ -150,9 +155,10 @@ public class RestaurantService {
 
     @Transactional
     public void toggleFavorite(Long restaurantId, Long memberId) {
-        boolean exists = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
+        Integer memberIdInt = memberId.intValue();
+        boolean exists = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberIdInt);
         if (exists) {
-            favoriteRepository.deleteByRestaurantIdAndMemberId(restaurantId, memberId);
+            favoriteRepository.deleteByRestaurantIdAndMemberId(restaurantId, memberIdInt);
         } else {
             RestaurantFavorite fav = new RestaurantFavorite();
             fav.setRestaurantId(restaurantId);
@@ -184,8 +190,11 @@ public class RestaurantService {
 
         List<RestaurantReview> reviews = getReviewsByRestaurantId(restaurantId);
 
-        boolean isFavorite = (memberId != null) &&
-            favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
+        boolean isFavorite = false;
+        if (memberId != null) {
+            Integer memberIdInt = memberId.intValue();
+            isFavorite = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberIdInt);
+        }
 
         String uploaderNickname = getUploaderNickname(restaurant.getCreatedBy());
 

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.example.foodmap.foodmap.domain.RestaurantReview;
 import com.example.foodmap.foodmap.domain.RestaurantService;
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
+import java.util.Enumeration;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -58,5 +59,17 @@ public class RestaurantPageController {
         model.addAttribute("favorite", dto.isFavorite());
 
         return "restaurant-detail"; // 對應 Thymeleaf 的 restaurant-detail.html
+    }
+    @GetMapping("/check-session")
+    public String checkSession(HttpSession session) {
+        Enumeration<String> attrs = session.getAttributeNames();
+        System.out.println("=== Session Attributes ===");
+        while (attrs.hasMoreElements()) {
+            String name = attrs.nextElement();
+            Object value = session.getAttribute(name);
+            System.out.println(name + " = " + value);
+        }
+        System.out.println("==========================");
+        return "redirect:/"; // 你可以改成跳到首頁或其他頁面
     }
 }
