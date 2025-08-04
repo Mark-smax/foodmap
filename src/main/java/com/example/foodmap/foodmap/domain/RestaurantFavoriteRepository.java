@@ -6,8 +6,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RestaurantFavoriteRepository extends JpaRepository<RestaurantFavorite, Long> {
 
-    // ✅ 修改成 Integer，跟 Entity 欄位一致
-    boolean existsByRestaurantIdAndMemberId(Long restaurantId, Integer memberId);
+    // 檢查某會員是否收藏某餐廳
+    boolean existsByRestaurantIdAndMemberId(Long restaurantId, Long memberId);
 
-    void deleteByRestaurantIdAndMemberId(Long restaurantId, Integer memberId);
+    // 移除收藏
+    void deleteByRestaurantIdAndMemberId(Long restaurantId, Long memberId);
 }

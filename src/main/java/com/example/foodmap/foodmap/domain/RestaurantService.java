@@ -75,8 +75,7 @@ public class RestaurantService {
 
             boolean isFav = false;
             if (memberId != null) {
-                Integer memberIdInt = memberId.intValue();
-                isFav = favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberIdInt);
+                isFav = favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
             }
 
             String uploaderName = getUploaderNickname(r.getCreatedBy());
@@ -94,6 +93,7 @@ public class RestaurantService {
             );
         }).collect(Collectors.toList());
 
+        // 收藏置頂 + 星等排序
         dtoList.sort((a, b) -> {
             if (a.isFavorite() != b.isFavorite()) {
                 return Boolean.compare(b.isFavorite(), a.isFavorite());
@@ -155,14 +155,16 @@ public class RestaurantService {
 
     @Transactional
     public void toggleFavorite(Long restaurantId, Long memberId) {
-        Integer memberIdInt = memberId.intValue();
-        boolean exists = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberIdInt);
+        if (memberId == null) return;
+
+        boolean exists = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
+
         if (exists) {
-            favoriteRepository.deleteByRestaurantIdAndMemberId(restaurantId, memberIdInt);
+            favoriteRepository.deleteByRestaurantIdAndMemberId(restaurantId, memberId);
         } else {
             RestaurantFavorite fav = new RestaurantFavorite();
             fav.setRestaurantId(restaurantId);
-            fav.setMemberId(memberId);
+            fav.setMemberId(memberId); // ✅ 改為 Long 型別
             favoriteRepository.save(fav);
         }
     }
@@ -192,8 +194,7 @@ public class RestaurantService {
 
         boolean isFavorite = false;
         if (memberId != null) {
-            Integer memberIdInt = memberId.intValue();
-            isFavorite = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberIdInt);
+            isFavorite = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
         }
 
         String uploaderNickname = getUploaderNickname(restaurant.getCreatedBy());
