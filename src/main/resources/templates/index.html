@@ -1,32 +1,31 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org/">
 <head>
-<meta charset="UTF-8">
-<title>首頁 Home</title>
+  <meta charset="UTF-8">
+  <title>首頁 Home</title>
 </head>
 <body>
-<div th:replace="~{layout/navbar}"></div>
+  <div th:replace="~{layout/navbar}"></div>
 
-<div class="container">
+  <div class="container">
+    <h1>首頁 ok666999 😊😊✔✔</h1>
 
-<h1>首頁 ok666999 😊😊✔✔</h1>
+    <div th:if="${session.loginMemberName}">安安你好: <span th:text="${session.loginMemberName}"></span></div>
+    <div th:if="${session.loginMemberId}"> <span th:text="${session.loginMemberId}"></span></div>
+    <div th:if="${session.loginMemberRoles}"> <span th:text="${session.loginMemberRoles}"></span></div>
 
-<div th:if="${session.loginMemberName}">安安你好: <span th:text="${session.loginMemberName}"></span></div>
-<div th:if="${session.loginMemberId}"> <span th:text="${session.loginMemberId}"></span></div>
-<div th:if="${session.loginMemberRoles}"> <span th:text="${session.loginMemberRoles}"></span></div>
+    <ul>
+      <li><a th:href="@{/employee/add}">新增員工</a></li>
+      <li><a th:href="@{/employee/all}">列出員工</a></li>
+    </ul>
+  </div>
 
-<ul>
- <li><a th:href="@{/employee/add}">新增員工</a></li>
- <li><a th:href="@{/employee/all}">列出員工</a></li>
-</ul>
-
-</div>
-
-<!-- ✅ 加入 th:inline="javascript" -->
-<!-- <script th:inline="javascript"> -->
-<!--   sessionStorage.setItem("loginMemberId", [[${session.loginMemberId}]]); -->
-<!-- </script> -->
-
-
+  <!-- ✅ 將 loginMemberId 寫入 sessionStorage，供前端 JS 使用 -->
+  <script th:inline="javascript">
+    const loginMemberId = /*[[${session.loginMemberId}]]*/ null;
+    if (loginMemberId !== null) {
+      sessionStorage.setItem("loginMemberId", loginMemberId);
+    }
+  </script>
 </body>
 </html>
