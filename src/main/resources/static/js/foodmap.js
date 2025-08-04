@@ -59,7 +59,7 @@ function renderCard(item, regionId) {
   const imgSrc = item.thumbnail
     ? 'data:image/jpeg;base64,' + item.thumbnail
     : 'https://via.placeholder.com/200x120?text=No+Image';
-
+	console.log("收藏狀態:", item.name, item.favorite);
   let ratingText = '';
   if (item.avgRating !== undefined && item.avgRating !== null) {
     if (item.avgRating === 0 || item.reviewCount === 0) {
@@ -69,7 +69,7 @@ function renderCard(item, regionId) {
     }
   }
 
-  const bookmark = item.isFavorite === true ? '🔖' : '';
+  const bookmark = item.favorite === true ? '🔖' : '';
 
   link.innerHTML = `
     <img src="${imgSrc}" alt="${item.name}" class="card-img-top" style="height: 120px; object-fit: cover;" />
