@@ -1,5 +1,6 @@
 package com.example.foodmap.foodmap.domain;
 
+import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +39,7 @@ public class RestaurantService {
         this.memberRepository = memberRepository;
     }
 
+    // ===== 既有搜尋：不動，保持目前行為 =====
     public Page<RestaurantDto> searchRestaurants(String county, Double minRating, String type, Pageable pageable, Long memberId) {
         boolean hasCounty = county != null && !county.trim().isEmpty();
         boolean hasType = type != null && !type.trim().isEmpty();
@@ -68,6 +70,36 @@ public class RestaurantService {
         return convertToDtoPage(page, memberId);
     }
 
+    // ===== 新增：商家提交流程（進入審核） =====
+    @Transactional
+    public Restaurant submitByMerchant(Restaurant r, Long merchantId) {
+        r.setStatus(ModerationStatus.PENDING);
+        r.setSubmittedBy(merchantId);
+        r.setSubmittedAt(OffsetDateTime.now());
+        r.setReviewedBy(null);
+        r.setReviewedAt(null);
+        r.setRejectReason(null);
+
+        // 若尚未帶 createdBy，順手帶上（你的 createdBy 是 Integer）
+        if (r.getCreatedBy() == null && merchantId != null) {
+            r.setCreatedBy(merchantId.intValue());
+        }
+        return restaurantRepository.save(r);
+    }
+
+    // ===== 新增：商家自己的餐廳列表（含 PENDING/REJECTED/APPROVED 但僅限本人）=====
+    public Page<RestaurantDto> searchMine(Long merchantId, Pageable pageable) {
+        Page<Restaurant> page = restaurantRepository.findBySubmittedBy(merchantId, pageable);
+        return convertToDtoPage(page, merchantId);
+    }
+
+    // ===== 新增：公開列表僅抓已核准（之後控制器切換會用）=====
+    public Page<RestaurantDto> searchApprovedAll(Pageable pageable, Long memberId) {
+        Page<Restaurant> page = restaurantRepository.findByStatus(ModerationStatus.APPROVED, pageable);
+        return convertToDtoPage(page, memberId);
+    }
+
+    // ===== 既有 DTO 轉換：不動 =====
     private Page<RestaurantDto> convertToDtoPage(Page<Restaurant> page, Long memberId) {
         List<RestaurantDto> dtoList = page.getContent().stream().map(r -> {
             setAverageRating(r);
@@ -120,6 +152,7 @@ public class RestaurantService {
         return null;
     }
 
+    // ===== 既有 CRUD：不動 =====
     @Transactional
     public Restaurant createRestaurant(Restaurant restaurant) {
         return restaurantRepository.save(restaurant);
@@ -164,7 +197,7 @@ public class RestaurantService {
         } else {
             RestaurantFavorite fav = new RestaurantFavorite();
             fav.setRestaurantId(restaurantId);
-            fav.setMemberId(memberId); // ✅ 改為 Long 型別
+            fav.setMemberId(memberId); // ✅ Long
             favoriteRepository.save(fav);
         }
     }

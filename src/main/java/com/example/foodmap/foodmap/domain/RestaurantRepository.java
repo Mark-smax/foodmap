@@ -7,8 +7,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
+import com.example.foodmap.foodmap.domain.ModerationStatus;
 import com.example.foodmap.foodmap.domain.Restaurant;
+
+
+
+
+
 
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
@@ -35,4 +40,24 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
 	@Query("SELECT r FROM Restaurant r")
 	List<Restaurant> findAllWithReviews();
+	// 審核狀態分頁（之後管理員待審清單會用）
+	Page<Restaurant> findByStatus(ModerationStatus status, Pageable pageable);
+
+	// 商家自己的投稿列表
+	Page<Restaurant> findBySubmittedBy(Long submittedBy, Pageable pageable);
+
+	// （可選）之後要把「公開的關鍵字搜尋」切到只抓 APPROVED 時會用到
+	@Query("""
+	SELECT r FROM Restaurant r
+	WHERE r.status = :status AND (
+	    LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+	    LOWER(r.address) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+	    LOWER(r.type) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+	    LOWER(r.keywords) LIKE LOWER(CONCAT('%', :keyword, '%'))
+	)
+	""")
+	Page<Restaurant> searchApprovedByKeyword(@Param("keyword") String keyword,
+	                                         @Param("status") ModerationStatus status,
+	                                         Pageable pageable);
+
 }
