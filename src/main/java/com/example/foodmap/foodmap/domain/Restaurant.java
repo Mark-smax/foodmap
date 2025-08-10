@@ -3,6 +3,7 @@ package com.example.foodmap.foodmap.domain;
 import com.example.foodmap.member.domain.Member;
 
 import jakarta.persistence.*;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "restaurant")
@@ -31,11 +32,32 @@ public class Restaurant {
     private Double avgRating;
 
     @Column(name = "created_by")
-    private Integer createdBy; // 對應 member_id
+    private Integer createdBy; // 對應 member_id（沿用你的型別 Integer）
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", insertable = false, updatable = false)
     private Member createdByMember; // 使用 Member 類別來映射 createdBy 欄位
+
+    // ======== 新增：審核流程相關欄位 ========
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private ModerationStatus status = ModerationStatus.APPROVED; // 既有資料視為已上架
+
+    @Column(name = "submitted_by")
+    private Long submittedBy; // 提交者（商家或管理員）
+
+    @Column(name = "submitted_at")
+    private OffsetDateTime submittedAt;
+
+    @Column(name = "reviewed_by")
+    private Long reviewedBy; // 審核者（管理員）
+
+    @Column(name = "reviewed_at")
+    private OffsetDateTime reviewedAt;
+
+    @Column(name = "reject_reason", length = 500)
+    private String rejectReason;
+    // =====================================
 
     public Restaurant() {}
 
@@ -137,4 +159,54 @@ public class Restaurant {
     public String getUploaderNickname() {
         return createdByMember != null ? createdByMember.getMemberNickName() : null;
     }
+
+    // ======== 新增欄位的 Getter/Setter ========
+    public ModerationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ModerationStatus status) {
+        this.status = status;
+    }
+
+    public Long getSubmittedBy() {
+        return submittedBy;
+    }
+
+    public void setSubmittedBy(Long submittedBy) {
+        this.submittedBy = submittedBy;
+    }
+
+    public OffsetDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(OffsetDateTime submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public Long getReviewedBy() {
+        return reviewedBy;
+    }
+
+    public void setReviewedBy(Long reviewedBy) {
+        this.reviewedBy = reviewedBy;
+    }
+
+    public OffsetDateTime getReviewedAt() {
+        return reviewedAt;
+    }
+
+    public void setReviewedAt(OffsetDateTime reviewedAt) {
+        this.reviewedAt = reviewedAt;
+    }
+
+    public String getRejectReason() {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
+    }
+    // ==========================================
 }
