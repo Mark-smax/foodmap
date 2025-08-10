@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -232,6 +234,9 @@ public class RestaurantService {
         return reviewRepository.findByRestaurantIdOrderByCreatedTimeDesc(id);
     }
 
+    /**
+     * ✅ 餐廳詳細資訊：加入 weeklyHours / 今日狀態（openNow、todayRange、todayStatusText、todayLabel）
+     */
     public RestaurantDetailsDTO getRestaurantDetails(Long restaurantId, Long memberId) {
         Restaurant restaurant = getRestaurantById(restaurantId);
         setAverageRating(restaurant);
@@ -249,9 +254,58 @@ public class RestaurantService {
 
         String uploaderNickname = getUploaderNickname(restaurant.getCreatedBy());
 
-        return new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite, uploaderNickname);
-    }
+        // 先建立 DTO（舊五參數建構子）
+        RestaurantDetailsDTO dto = new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite, uploaderNickname);
 
+        // === 營業時間週表 ===
+        LinkedHashMap<DayOfWeek, List<String>> weekly = buildWeeklyHours(restaurantId);
+        dto.setWeeklyHours(weekly);
+
+        // === 今日狀態 ===
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
+        DayOfWeek dow = today.getDayOfWeek();
+
+        boolean openNow;
+        String todayRangeText;
+
+        var specOpt = specialHourRepository.findByRestaurantIdAndSpecificDate(restaurantId, today);
+        if (specOpt.isPresent()) {
+            var spec = specOpt.get();
+            if (spec.isClosedAllDay()) {
+                openNow = false;
+                todayRangeText = "公休";
+            } else if (spec.getOpenTime() == null || spec.getCloseTime() == null) {
+                openNow = false;
+                todayRangeText = "未設定";
+            } else {
+                openNow = within(now.toLocalTime(), spec.getOpenTime(), spec.getCloseTime());
+                todayRangeText = formatRange(spec.getOpenTime(), spec.getCloseTime());
+            }
+        } else {
+            var todays = hourRepository.findByRestaurantIdAndDayOfWeekOrderByIdAsc(restaurantId, dow);
+            if (todays.isEmpty()) {
+                openNow = false;
+                todayRangeText = "未設定";
+            } else if (todays.stream().anyMatch(RestaurantHour::isClosedAllDay)) {
+                openNow = false;
+                todayRangeText = "公休";
+            } else {
+                LocalTime current = now.toLocalTime();
+                openNow = todays.stream().anyMatch(h -> within(current, h.getOpenTime(), h.getCloseTime()));
+                todayRangeText = todays.stream()
+                        .map(h -> formatRange(h.getOpenTime(), h.getCloseTime()))
+                        .collect(Collectors.joining(" / "));
+            }
+        }
+
+        dto.setOpenNow(openNow);
+        dto.setTodayRange(todayRangeText);
+        dto.setTodayLabel(toZhDow(dow));
+        dto.setTodayStatusText(openNow ? "營業中" : ("公休".equals(todayRangeText) ? "今日公休" : "已打烊"));
+
+        return dto;
+    }
     private void setAverageRating(Restaurant restaurant) {
         List<RestaurantReview> reviews = reviewRepository.findByRestaurantId(restaurant.getId());
         if (!reviews.isEmpty()) {
@@ -354,7 +408,7 @@ public class RestaurantService {
             var s = specialOpt.get();
             if (s.isClosedAllDay()) return true; // 整天公休
             if (s.getOpenTime() == null || s.getCloseTime() == null) return true; // 無有效時段視為休息
-            boolean within = !time.isBefore(s.getOpenTime()) && time.isBefore(s.getCloseTime());
+            boolean within = within(time, s.getOpenTime(), s.getCloseTime());
             return !within;
         }
 
@@ -372,14 +426,10 @@ public class RestaurantService {
         }
 
         // 只要命中任一有效時段就算營業中
-        boolean open = false;
-        for (var h : todays) {
-            if (h.getOpenTime() == null || h.getCloseTime() == null) continue;
-            if (!time.isBefore(h.getOpenTime()) && time.isBefore(h.getCloseTime())) {
-                open = true;
-                break;
-            }
-        }
+        boolean open = todays.stream().anyMatch(h ->
+                h.getOpenTime() != null && h.getCloseTime() != null &&
+                within(time, h.getOpenTime(), h.getCloseTime())
+        );
         return !open;
     }
 
@@ -421,4 +471,69 @@ public class RestaurantService {
             specialHourRepository.save(spec);
         }
     }
+
+    // ============================================================
+    // ================== ★★★ 私有工具方法 ★★★ ==================
+    // ============================================================
+
+    /**
+     * 產出週一→週日的時段表（固定順序），每一天可能有多段。
+     */
+    private LinkedHashMap<DayOfWeek, List<String>> buildWeeklyHours(Long restaurantId) {
+        LinkedHashMap<DayOfWeek, List<String>> map = new LinkedHashMap<>();
+        DayOfWeek[] order = new DayOfWeek[]{
+                DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+                DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY
+        };
+        for (DayOfWeek d : order) {
+            var hours = hourRepository.findByRestaurantIdAndDayOfWeekOrderByIdAsc(restaurantId, d);
+            // 過濾整天公休，將有效時段格式化
+            List<String> ranges = hours.stream()
+                    .filter(h -> !h.isClosedAllDay() && h.getOpenTime() != null && h.getCloseTime() != null)
+                    .map(h -> formatRange(h.getOpenTime(), h.getCloseTime()))
+                    .collect(Collectors.toList());
+            map.put(d, ranges);
+        }
+        return map;
+    }
+
+    /**
+     * 判斷 now 是否在 [open, close) 內；支援跨夜（open > close）。
+     */
+    private boolean within(LocalTime now, LocalTime open, LocalTime close) {
+        if (open == null || close == null) return false;
+        if (open.equals(close)) return false; // 0 時段
+        if (open.isBefore(close)) {
+            // 同日時段
+            return !now.isBefore(open) && now.isBefore(close);
+        } else {
+            // 跨夜：例如 18:00 ~ 02:00
+            return !now.isBefore(open) || now.isBefore(close);
+        }
+    }
+
+    private String formatRange(LocalTime open, LocalTime close) {
+        if (open == null || close == null) return "未設定";
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+        return open.format(fmt) + "–" + close.format(fmt);
+    }
+
+    private String toZhDow(DayOfWeek d) {
+        switch (d) {
+            case MONDAY: return "週一";
+            case TUESDAY: return "週二";
+            case WEDNESDAY: return "週三";
+            case THURSDAY: return "週四";
+            case FRIDAY: return "週五";
+            case SATURDAY: return "週六";
+            case SUNDAY: return "週日";
+            default: return "";
+        }
+    }
+ // 讓編輯頁可以預載現有的每週時段（原始 entity 列表）
+    @Transactional(readOnly = true)
+    public List<RestaurantHour> getWeeklyHourEntities(Long restaurantId) {
+        return hourRepository.findByRestaurantIdOrderByDayOfWeekAsc(restaurantId);
+    }
+
 }

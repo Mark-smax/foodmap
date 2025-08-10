@@ -1,7 +1,11 @@
 package com.example.foodmap.foodmap.web;
 
+import java.time.DayOfWeek;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Controller;
@@ -12,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.example.foodmap.foodmap.domain.RestaurantReview;
 import com.example.foodmap.foodmap.domain.RestaurantService;
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
-import java.util.Enumeration;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -25,41 +28,99 @@ public class RestaurantPageController {
         this.restaurantService = restaurantService;
     }
 
-    /**
-     * 顯示餐廳詳細頁面（含評論、圖片、是否已收藏）
-     * URL: /restaurant-detail?id=1
-     */
     @GetMapping("/restaurant-detail")
-    public String showDetailPage(@RequestParam("id") Long id,
-                                 HttpSession session,
-                                 Model model) {
+    public String showDetailPage(
+            @RequestParam("id") Long id,
+            @RequestParam(value = "memberId", required = false) String memberIdStr,
+            HttpSession session,
+            Model model) {
 
-        // 取得登入會員 ID（若未登入則為 null）
-        Integer loginMemberIdInt = (Integer) session.getAttribute("loginMemberId");
-        Long loginMemberId = (loginMemberIdInt != null) ? loginMemberIdInt.longValue() : null;
+        // 1) 取得 loginMemberId（querystring > session）
+        Long loginMemberId = null;
+        if (memberIdStr != null && !memberIdStr.isBlank()) {
+            try { loginMemberId = Long.parseLong(memberIdStr); } catch (NumberFormatException ignore) {}
+        }
+        if (loginMemberId == null) {
+            Object raw = session.getAttribute("loginMemberId");
+            if (raw instanceof Long) loginMemberId = (Long) raw;
+            else if (raw instanceof Integer) loginMemberId = ((Integer) raw).longValue();
+            else if (raw instanceof String) { try { loginMemberId = Long.parseLong((String) raw); } catch (Exception ignore) {} }
+        }
 
-        // ✅ 傳 loginMemberId 給 Thymeleaf 用來比對留言者是否是本人
-        model.addAttribute("loginMemberId", loginMemberId);
-
-        // 取得餐廳詳細資料（含照片、評論、是否收藏）
+        // 2) 取 DTO
         RestaurantDetailsDTO dto = restaurantService.getRestaurantDetails(id, loginMemberId);
 
-        // 取得評論並格式化時間
+        // 3) 評論時間格式化
         List<RestaurantReview> reviews = dto.getReviews();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         List<String> reviewTimes = reviews.stream()
-                .map(r -> r.getCreatedTime().format(formatter))
+                .map(r -> r.getCreatedTime() != null ? r.getCreatedTime().format(formatter) : "")
                 .collect(Collectors.toList());
 
-        // 傳資料給 View
+        // 4) 是否為管理員（給模板使用）
+        boolean isAdmin = false;
+        Object roles = session.getAttribute("loginMemberRoles");
+        if (roles != null) {
+            String s = String.valueOf(roles);
+            isAdmin = s.contains("ADMIN") || s.contains("管理員");
+        }
+
+        // 5) 將 weeklyHours 轉為模板用的「固定順序列」，
+        //    避免在 Thymeleaf 呼叫 #lists.*（你這版沒有這些方法）
+        List<DayRow> weeklyHoursRows = buildWeeklyRows(dto.getWeeklyHours());
+
+        // 6) 丟資料給 View
         model.addAttribute("restaurant", dto.getRestaurant());
         model.addAttribute("photos", dto.getPhotoBase64List());
         model.addAttribute("reviews", reviews);
         model.addAttribute("reviewTimes", reviewTimes);
         model.addAttribute("favorite", dto.isFavorite());
+        model.addAttribute("loginMemberId", loginMemberId);
+        model.addAttribute("uploaderNickname", dto.getUploaderNickname());
+        model.addAttribute("isAdmin", isAdmin);
 
-        return "restaurant-detail"; // 對應 Thymeleaf 的 restaurant-detail.html
+        // ✅ 營業資訊
+        model.addAttribute("weeklyHoursRows", weeklyHoursRows);
+        model.addAttribute("openNow", dto.getOpenNow());
+        model.addAttribute("todayRange", dto.getTodayRange());
+        model.addAttribute("todayStatusText", dto.getTodayStatusText());
+        model.addAttribute("todayLabel", dto.getTodayLabel());
+
+        return "restaurant-detail";
     }
+
+    // 把 Map<DayOfWeek, List<String>> 轉成固定順序的列資料（週一→週日）
+    private List<DayRow> buildWeeklyRows(Map<DayOfWeek, List<String>> weekly) {
+        List<DayRow> rows = new ArrayList<>();
+        DayOfWeek[] order = {
+                DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+                DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY
+        };
+        String[] labels = {"週一","週二","週三","週四","週五","週六","週日"};
+
+        for (int i = 0; i < order.length; i++) {
+            DayOfWeek d = order[i];
+            List<String> ranges = (weekly != null && weekly.get(d) != null) ? weekly.get(d) : List.of();
+            String text = ranges.isEmpty() ? "公休" : String.join(" / ", ranges);
+            rows.add(new DayRow(labels[i], text));
+        }
+        return rows;
+    }
+
+    // 提供模板使用的簡單資料列
+    public static class DayRow {
+        private final String label;   // 週幾（中文）
+        private final String ranges;  // 時段字串或「公休」
+
+        public DayRow(String label, String ranges) {
+            this.label = label;
+            this.ranges = ranges;
+        }
+        public String getLabel() { return label; }
+        public String getRanges() { return ranges; }
+    }
+
+    // 除錯端點
     @GetMapping("/check-session")
     public String checkSession(HttpSession session) {
         Enumeration<String> attrs = session.getAttributeNames();
@@ -70,6 +131,6 @@ public class RestaurantPageController {
             System.out.println(name + " = " + value);
         }
         System.out.println("==========================");
-        return "redirect:/"; // 你可以改成跳到首頁或其他頁面
+        return "redirect:/";
     }
 }
