@@ -1,173 +1,133 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>編輯餐廳</title>
-  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet"/>
-  <style>
-    .help { font-size: .9rem; color: #6c757d; }
-  </style>
+  <title>編輯餐廳（商家）</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-<div th:replace="~{layout/navbar}"></div>
+<body class="container py-4">
+  <div th:replace="~{layout/navbar}"></div>
 
-<div class="container my-4" th:object="${restaurant}">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>編輯餐廳</h3>
-    <a class="btn btn-secondary" th:href="@{/merchant/restaurant/mine}">返回</a>
+  <h2 class="mb-4">編輯餐廳資料（商家）</h2>
+
+  <div class="mb-3" th:if="${restaurant != null}">
+    <span class="badge"
+          th:classappend="${restaurant.status}=='APPROVED' ? 'bg-success' :
+                          (${restaurant.status}=='PENDING' ? 'bg-warning text-dark' :
+                          (${restaurant.status}=='REJECTED' ? 'bg-danger' : 'bg-secondary'))"
+          th:text="${restaurant.status}">狀態</span>
+    <div class="text-danger small mt-1" th:if="${restaurant.rejectReason}">
+      退回原因：<span th:text="${restaurant.rejectReason}"></span>
+    </div>
   </div>
 
-  <form th:action="@{'/merchant/restaurant/edit/' + *{id}}" method="post">
-    <!-- 基本資訊 -->
-    <div class="card mb-3">
-      <div class="card-header">基本資訊</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">餐廳名稱 <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" th:field="*{name}" required>
-          </div>
+  <form th:action="@{|/merchant/restaurant/edit/${restaurant.id}|}" method="post" enctype="multipart/form-data" th:object="${restaurant}">
+    <div class="mb-3">
+      <label class="form-label">店名</label>
+      <input type="text" class="form-control" th:field="*{name}" name="name" required>
+    </div>
 
-          <div class="col-md-3">
-            <label class="form-label">縣市</label>
-            <input type="text" class="form-control" th:field="*{county}">
-          </div>
+    <div class="mb-3">
+      <label class="form-label">地址</label>
+      <input type="text" class="form-control" th:field="*{address}" name="address" required>
+    </div>
 
-          <div class="col-md-3">
-            <label class="form-label">電話</label>
-            <input type="text" class="form-control" th:field="*{phone}">
-          </div>
+    <div class="mb-3">
+      <label class="form-label">電話</label>
+      <input type="text" class="form-control" th:field="*{phone}" name="phone">
+    </div>
 
-          <div class="col-12">
-            <label class="form-label">地址</label>
-            <input type="text" class="form-control" th:field="*{address}">
-          </div>
-        </div>
+    <div class="mb-3">
+      <label class="form-label">縣市</label>
+      <select class="form-select" th:field="*{county}" name="county" required>
+        <option value="">請選擇</option>
+        <option value="台北市">台北市</option>
+        <option value="新北市">新北市</option>
+        <option value="基隆市">基隆市</option>
+        <option value="桃園市">桃園市</option>
+        <option value="新竹市">新竹市</option>
+        <option value="新竹縣">新竹縣</option>
+        <option value="苗栗縣">苗栗縣</option>
+        <option value="台中市">台中市</option>
+        <option value="彰化縣">彰化縣</option>
+        <option value="南投縣">南投縣</option>
+        <option value="雲林縣">雲林縣</option>
+        <option value="嘉義市">嘉義市</option>
+        <option value="嘉義縣">嘉義縣</option>
+        <option value="台南市">台南市</option>
+        <option value="高雄市">高雄市</option>
+        <option value="屏東縣">屏東縣</option>
+        <option value="台東縣">台東縣</option>
+        <option value="花蓮縣">花蓮縣</option>
+        <option value="宜蘭縣">宜蘭縣</option>
+        <option value="澎湖縣">澎湖縣</option>
+        <option value="金門縣">金門縣</option>
+        <option value="連江縣">連江縣</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">分類（可複選）</label><br>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="早餐"
+               th:checked="${#strings.contains(restaurant.type, '早餐')}">
+        <label class="form-check-label">早餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="早午餐"
+               th:checked="${#strings.contains(restaurant.type, '早午餐')}">
+        <label class="form-check-label">早午餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="午餐"
+               th:checked="${#strings.contains(restaurant.type, '午餐')}">
+        <label class="form-check-label">午餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="下午茶"
+               th:checked="${#strings.contains(restaurant.type, '下午茶')}">
+        <label class="form-check-label">下午茶</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="小吃"
+               th:checked="${#strings.contains(restaurant.type, '小吃')}">
+        <label class="form-check-label">小吃</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="晚餐"
+               th:checked="${#strings.contains(restaurant.type, '晚餐')}">
+        <label class="form-check-label">晚餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="甜點"
+               th:checked="${#strings.contains(restaurant.type, '甜點')}">
+        <label class="form-check-label">甜點</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="冰品"
+               th:checked="${#strings.contains(restaurant.type, '冰品')}">
+        <label class="form-check-label">冰品</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="銅板美食"
+               th:checked="${#strings.contains(restaurant.type, '銅板美食')}">
+        <label class="form-check-label">銅板美食</label>
       </div>
     </div>
 
-    <!-- 分類（多選） -->
-    <div class="card mb-3">
-      <div class="card-header">餐廳分類（可多選）</div>
-      <div class="card-body">
-        <p class="help mb-2">已選：<span th:text="*{type} ?: '（未選）'"></span></p>
-        <div class="row row-cols-2 row-cols-md-4 g-2">
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="中式"
-                     th:checked="${#strings.contains(restaurant.type, '中式')}">
-              <label class="form-check-label">中式</label>
-            </div>
-          </div>
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="日式"
-                     th:checked="${#strings.contains(restaurant.type, '日式')}">
-              <label class="form-check-label">日式</label>
-            </div>
-          </div>
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="韓式"
-                     th:checked="${#strings.contains(restaurant.type, '韓式')}">
-              <label class="form-check-label">韓式</label>
-            </div>
-          </div>
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="美式"
-                     th:checked="${#strings.contains(restaurant.type, '美式')}">
-              <label class="form-check-label">美式</label>
-            </div>
-          </div>
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="早午餐"
-                     th:checked="${#strings.contains(restaurant.type, '早午餐')}">
-              <label class="form-check-label">早午餐</label>
-            </div>
-          </div>
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="咖啡廳"
-                     th:checked="${#strings.contains(restaurant.type, '咖啡廳')}">
-              <label class="form-check-label">咖啡廳</label>
-            </div>
-          </div>
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="甜點"
-                     th:checked="${#strings.contains(restaurant.type, '甜點')}">
-              <label class="form-check-label">甜點</label>
-            </div>
-          </div>
-          <div class="col">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="type"
-                     value="素食"
-                     th:checked="${#strings.contains(restaurant.type, '素食')}">
-              <label class="form-check-label">素食</label>
-            </div>
-          </div>
-        </div>
-        <div class="help mt-2">送出時會由後端把多選結果以逗號合併存入 <code>Restaurant.type</code>。</div>
-      </div>
+    <div class="mb-3">
+      <label class="form-label">關鍵字（必填，空格分隔）</label>
+      <input type="text" class="form-control" th:field="*{keywords}" name="keywords" placeholder="小籠包 餡餅 排隊" required>
     </div>
 
-    <!-- 其它資訊 -->
-    <div class="card mb-3">
-      <div class="card-header">其它資訊</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label">關鍵字（用空白或逗號分隔）</label>
-            <input type="text" class="form-control" th:field="*{keywords}">
-          </div>
-          <div class="col-12">
-            <label class="form-label">介紹</label>
-            <textarea class="form-control" rows="4" th:field="*{description}"></textarea>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">營業時間</label>
-            <input type="text" class="form-control" th:field="*{openingHours}">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">平均消費</label>
-            <input type="text" class="form-control" th:field="*{avgPrice}">
-          </div>
-        </div>
-      </div>
+    <div class="mb-3">
+      <label class="form-label">新增店家照片（最多 5 張）</label>
+      <input type="file" class="form-control" name="photos" multiple accept="image/*">
+      <div class="form-text">支援多檔上傳，僅儲存前 5 張。已上傳的舊照片會保留。</div>
     </div>
 
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary">送出修改（轉為待審）</button>
-      <a class="btn btn-outline-secondary" th:href="@{/merchant/restaurant/mine}">取消</a>
-    </div>
+    <button type="submit" class="btn btn-primary">儲存並重新送審</button>
+    <a class="btn btn-outline-secondary" th:href="@{/merchant/restaurant/mine}">回我的餐廳</a>
   </form>
-</div>
-
 </body>
 </html>

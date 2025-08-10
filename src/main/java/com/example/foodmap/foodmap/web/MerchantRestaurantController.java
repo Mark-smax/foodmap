@@ -135,25 +135,57 @@ public class MerchantRestaurantController {
         return "merchant/restaurant-edit";
     }
 
-    // 編輯並重新送審（通常用在 REJECTED 狀態）
+ // 編輯並重新送審（通常用在 REJECTED 或想更新上架內容）
     @PostMapping("/edit/{id}")
     public String updateAndResubmit(@PathVariable Long id,
                                     @ModelAttribute Restaurant form,
+                                    @RequestParam(value = "type", required = false) List<String> types,
+                                    @RequestParam(value = "photos", required = false) MultipartFile[] photos,
                                     HttpSession session) {
         if (!hasRole(session, "MERCHANT")) return "redirect:/member/login";
         Long merchantId = currentMemberId(session);
 
-        restaurantService.updateAndResubmit(id, form, merchantId);
+        // 多選分類 -> 以逗號合併存進 Restaurant.type（和新增一致）
+        if (types != null && !types.isEmpty()) {
+            form.setType(String.join(",", types));
+        }
+
+        // 關鍵字防守
+        if (form.getKeywords() == null) {
+            form.setKeywords("");
+        }
+
+        // 先更新餐廳本身並轉為待審
+        var updated = restaurantService.updateAndResubmit(id, form, merchantId);
+
+        // 若有上傳新照片，最多存 5 張（保留舊照片；若要替換，另做刪除 API）
+        if (photos != null && photos.length > 0) {
+            int count = 0;
+            for (MultipartFile f : photos) {
+                if (f == null || f.isEmpty()) continue;
+                try {
+                    RestaurantPhoto p = new RestaurantPhoto();
+                    p.setRestaurantId(updated.getId());
+                    p.setImage(f.getBytes());
+                    restaurantPhotoRepository.save(p);
+                    count++;
+                    if (count >= 5) break;
+                } catch (Exception ignore) {
+                    // 單張失敗就略過，不影響整體流程
+                }
+            }
+        }
 
         // 通知管理員：有重新送審
         notificationService.notifyAdmins(
             "餐廳重新送審",
-            "商家重新送審：「" + form.getName() + "」等待審核",
+            "商家重新送審：「" + updated.getName() + "」等待審核",
             "/admin/moderation/restaurants?status=PENDING"
         );
 
         return "redirect:/merchant/restaurant/mine";
     }
+
 
     // 不改內容，直接重新送審（提供快捷鍵用）
     @PostMapping("/resubmit/{id}")
