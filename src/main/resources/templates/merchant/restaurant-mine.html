@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+  <meta charset="UTF-8">
+  <title>我的餐廳</title>
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet"/>
+  <style>
+    .badge-status { font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div th:replace="~{layout/navbar}"></div>
+
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>我的餐廳</h3>
+    <a class="btn btn-primary" th:href="@{/merchant/restaurant/create}">+ 新增餐廳</a>
+  </div>
+
+  <div th:if="${page.totalElements == 0}" class="alert alert-info">目前沒有資料。</div>
+
+  <div th:if="${page.totalElements > 0}">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+        <tr>
+          <th>縮圖</th>
+          <th>餐廳</th>
+          <th>縣市 / 分類</th>
+          <th>平均星等</th>
+          <th>審核狀態</th>
+          <th>退回原因</th>
+          <th>動作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${page.content}">
+          <td style="width:120px">
+            <img th:if="${r.thumbnail}" th:src="'data:image/jpeg;base64,' + ${r.thumbnail}"
+                 class="img-thumbnail" style="max-width:110px">
+            <span th:if="${r.thumbnail == null}" class="text-muted">無圖</span>
+          </td>
+          <td>
+            <div class="fw-semibold" th:text="${r.name}"></div>
+            <div class="text-muted small" th:text="${r.address}"></div>
+            <div class="small" th:if="${r.uploaderNickname}">上傳者：<span th:text="${r.uploaderNickname}"></span></div>
+          </td>
+          <td>
+            <div th:text="${r.county}"></div>
+            <div class="text-muted small" th:text="${r.type}"></div>
+          </td>
+          <td th:text="${#numbers.formatDecimal(r.avgRating, 1, 1)}">0.0</td>
+          <td>
+            <span th:switch="${r.status}">
+              <span th:case="'APPROVED'" class="badge bg-success badge-status">已上架</span>
+              <span th:case="'PENDING'"  class="badge bg-warning text-dark badge-status">待審</span>
+              <span th:case="'REJECTED'" class="badge bg-danger badge-status">退回</span>
+              <span th:case="*"
+                    class="badge bg-secondary badge-status" th:text="${r.status}">未知</span>
+            </span>
+          </td>
+          <td>
+            <span th:text="${r.rejectReason}" th:if="${r.rejectReason}"></span>
+            <span th:if="${r.rejectReason == null}" class="text-muted">—</span>
+          </td>
+
+          <!-- ✅ 本次更新的動作欄 -->
+          <td>
+            <!-- 已通過 -->
+            <a class="btn btn-sm btn-outline-secondary"
+               th:href="@{'/restaurant/' + ${r.id}}"
+               th:if="${r.status == 'APPROVED'}">前台查看</a>
+
+            <!-- 退回：顯示兩個按鈕 -->
+            <div th:if="${r.status == 'REJECTED'}" class="d-flex gap-2">
+              <a class="btn btn-sm btn-primary"
+                 th:href="@{'/merchant/restaurant/edit/' + ${r.id}}">修改並重新送審</a>
+
+              <form th:action="@{'/merchant/restaurant/resubmit/' + ${r.id}}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-warning">直接重新送審</button>
+              </form>
+            </div>
+
+            <!-- 待審 -->
+            <span th:if="${r.status == 'PENDING'}" class="text-muted small">審核中</span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <nav>
+      <ul class="pagination">
+        <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+          <a class="page-link" th:href="@{|/merchant/restaurant/mine?page=${page.number - 1}|}">上一頁</a>
+        </li>
+        <li class="page-item disabled"><span class="page-link"
+             th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1/1</span></li>
+        <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+          <a class="page-link" th:href="@{|/merchant/restaurant/mine?page=${page.number + 1}|}">下一頁</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+</body>
+</html>

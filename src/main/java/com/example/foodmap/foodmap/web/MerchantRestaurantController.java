@@ -1,14 +1,17 @@
 package com.example.foodmap.foodmap.web;
 
-import java.util.Objects;
+import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.foodmap.foodmap.domain.NotificationService;
 import com.example.foodmap.foodmap.domain.Restaurant;
+import com.example.foodmap.foodmap.domain.RestaurantPhoto;
+import com.example.foodmap.foodmap.domain.RestaurantPhotoRepository;
 import com.example.foodmap.foodmap.domain.RestaurantService;
 
 import jakarta.servlet.http.HttpSession;
@@ -19,11 +22,14 @@ public class MerchantRestaurantController {
 
     private final RestaurantService restaurantService;
     private final NotificationService notificationService;
+    private final RestaurantPhotoRepository restaurantPhotoRepository;
 
     public MerchantRestaurantController(RestaurantService restaurantService,
-                                        NotificationService notificationService) {
+                                        NotificationService notificationService,
+                                        RestaurantPhotoRepository restaurantPhotoRepository) {
         this.restaurantService = restaurantService;
         this.notificationService = notificationService;
+        this.restaurantPhotoRepository = restaurantPhotoRepository;
     }
 
     private boolean hasRole(HttpSession session, String role) {
@@ -45,21 +51,56 @@ public class MerchantRestaurantController {
             return "redirect:/member/login";
         }
         model.addAttribute("restaurant", new Restaurant());
-        return "merchant/restaurant-create"; // Step 5 會提供模板
+        return "merchant/restaurant-create";
     }
 
+    // ✅ 改良版：可收多選分類與多張照片
     @PostMapping("/create")
-    public String submit(@ModelAttribute Restaurant form, HttpSession session) {
+    public String submit(@ModelAttribute Restaurant form,
+                         @RequestParam(value = "type", required = false) List<String> types,
+                         @RequestParam(value = "photos", required = false) MultipartFile[] photos,
+                         HttpSession session) {
         if (!hasRole(session, "MERCHANT")) {
             return "redirect:/member/login";
         }
         Long merchantId = currentMemberId(session);
-        restaurantService.submitByMerchant(form, merchantId);
 
-        // 通知所有管理員有新上架申請
+        // 多選分類 -> 以逗號合併存進 Restaurant.type
+        if (types != null && !types.isEmpty()) {
+            form.setType(String.join(",", types));
+        }
+
+        // 關鍵字簡單必填防守（也可再加進階表單驗證）
+        if (form.getKeywords() == null) {
+            form.setKeywords("");
+        }
+
+        // 送審（狀態設為 PENDING、記錄提交者）
+        var saved = restaurantService.submitByMerchant(form, merchantId);
+
+        // 儲存照片（最多 5 張；忽略空檔）
+        if (photos != null && photos.length > 0) {
+            int count = 0;
+            for (MultipartFile f : photos) {
+                if (f == null || f.isEmpty()) continue;
+                try {
+                    RestaurantPhoto p = new RestaurantPhoto();
+                    p.setRestaurantId(saved.getId());
+                    p.setImage(f.getBytes());
+                    // 若有 contentType 欄位可加：p.setContentType(f.getContentType());
+                    restaurantPhotoRepository.save(p);
+                    count++;
+                    if (count >= 5) break;
+                } catch (Exception ignore) {
+                    // 單張失敗就略過，不影響整體流程
+                }
+            }
+        }
+
+        // 通知所有管理員：有新上架申請
         notificationService.notifyAdmins(
             "新上架申請",
-            "商家提交了餐廳：「" + form.getName() + "」等待審核",
+            "商家提交了餐廳：「" + saved.getName() + "」等待審核",
             "/admin/moderation/restaurants?status=PENDING"
         );
 
@@ -76,6 +117,58 @@ public class MerchantRestaurantController {
         Long merchantId = currentMemberId(session);
         var result = restaurantService.searchMine(merchantId, PageRequest.of(page, 10));
         model.addAttribute("page", result);
-        return "merchant/restaurant-mine"; // Step 5 會提供模板
+        return "merchant/restaurant-mine";
+    }
+
+    // 顯示編輯頁（僅限提交者 & 商家角色）
+    @GetMapping("/edit/{id}")
+    public String editForm(@PathVariable Long id, HttpSession session, Model model) {
+        if (!hasRole(session, "MERCHANT")) return "redirect:/member/login";
+        Long merchantId = currentMemberId(session);
+
+        // 只允許看自己的
+        var r = restaurantService.findById(id);
+        if (r.getSubmittedBy() == null || !r.getSubmittedBy().equals(merchantId)) {
+            return "redirect:/merchant/restaurant/mine";
+        }
+        model.addAttribute("restaurant", r);
+        return "merchant/restaurant-edit";
+    }
+
+    // 編輯並重新送審（通常用在 REJECTED 狀態）
+    @PostMapping("/edit/{id}")
+    public String updateAndResubmit(@PathVariable Long id,
+                                    @ModelAttribute Restaurant form,
+                                    HttpSession session) {
+        if (!hasRole(session, "MERCHANT")) return "redirect:/member/login";
+        Long merchantId = currentMemberId(session);
+
+        restaurantService.updateAndResubmit(id, form, merchantId);
+
+        // 通知管理員：有重新送審
+        notificationService.notifyAdmins(
+            "餐廳重新送審",
+            "商家重新送審：「" + form.getName() + "」等待審核",
+            "/admin/moderation/restaurants?status=PENDING"
+        );
+
+        return "redirect:/merchant/restaurant/mine";
+    }
+
+    // 不改內容，直接重新送審（提供快捷鍵用）
+    @PostMapping("/resubmit/{id}")
+    public String resubmit(@PathVariable Long id, HttpSession session) {
+        if (!hasRole(session, "MERCHANT")) return "redirect:/member/login";
+        Long merchantId = currentMemberId(session);
+
+        var r = restaurantService.resubmitWithoutChange(id, merchantId);
+
+        notificationService.notifyAdmins(
+            "餐廳重新送審",
+            "商家重新送審：「" + r.getName() + "」等待審核",
+            "/admin/moderation/restaurants?status=PENDING"
+        );
+
+        return "redirect:/merchant/restaurant/mine";
     }
 }

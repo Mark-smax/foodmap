@@ -15,8 +15,9 @@ public class RestaurantReview {
     @Column(name = "restaurant_id", nullable = false)
     private Long restaurantId;
 
+    // ✅ 改為 Integer，與 SQL Server INT 對齊
     @Column(name = "member_id", nullable = false)
-    private Long memberId;
+    private Integer memberId;
 
     @Column(nullable = false)
     private int rating;
@@ -35,88 +36,52 @@ public class RestaurantReview {
     @Column(name = "is_hidden", nullable = false)
     private Boolean isHidden = false;
 
-    // 新增暱稱欄位，用來顯示評論者的暱稱
+    // 顯示評論者暱稱（不入庫）
     @Transient
     private String memberNickName;
 
-    // 建構子
-    public RestaurantReview() {
+    public RestaurantReview() {}
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdTime == null) {
+            this.createdTime = LocalDateTime.now();
+        }
+        if (this.isHidden == null) {
+            this.isHidden = false;
+        }
     }
 
-    // Getter / Setter
-    public Long getId() {
-        return id;
-    }
+    // ===== Getter / Setter =====
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getRestaurantId() { return restaurantId; }
+    public void setRestaurantId(Long restaurantId) { this.restaurantId = restaurantId; }
 
-    public Long getRestaurantId() {
-        return restaurantId;
-    }
+    public Integer getMemberId() { return memberId; }
+    public void setMemberId(Integer memberId) { this.memberId = memberId; }
 
-    public void setRestaurantId(Long restaurantId) {
-        this.restaurantId = restaurantId;
-    }
+    public int getRating() { return rating; }
+    public void setRating(int rating) { this.rating = rating; }
 
-    public Long getMemberId() {
-        return memberId;
-    }
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
 
-    public void setMemberId(Long memberId) {
-        this.memberId = memberId;
-    }
+    public LocalDateTime getCreatedTime() { return createdTime; }
+    public void setCreatedTime(LocalDateTime createdTime) { this.createdTime = createdTime; }
 
-    public int getRating() {
-        return rating;
-    }
+    public Member getMember() { return member; }
+    public void setMember(Member member) { this.member = member; }
 
-    public void setRating(int rating) {
-        this.rating = rating;
-    }
+    public Boolean getIsHidden() { return isHidden; }
+    public void setIsHidden(Boolean isHidden) { this.isHidden = isHidden; }
 
-    public String getComment() {
-        return comment;
-    }
-
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
-
-    public LocalDateTime getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(LocalDateTime createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public Member getMember() {
-        return member;
-    }
-
-    public void setMember(Member member) {
-        this.member = member;
-    }
-
-    public Boolean getIsHidden() {
-        return isHidden;
-    }
-
-    public void setIsHidden(Boolean isHidden) {
-        this.isHidden = isHidden;
-    }
-
-    // Getter / Setter for memberNickName
     public String getMemberNickName() {
         if (this.member != null) {
-            return this.member.getMemberNickName(); // 確保可以從 Member 類別獲取暱稱
+            return this.member.getMemberNickName();
         }
         return memberNickName;
     }
-
-    public void setMemberNickName(String memberNickName) {
-        this.memberNickName = memberNickName;
-    }
+    public void setMemberNickName(String memberNickName) { this.memberNickName = memberNickName; }
 }

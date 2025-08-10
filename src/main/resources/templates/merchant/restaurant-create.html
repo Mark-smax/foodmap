@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>新增餐廳（商家）</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-4">
+  <div th:replace="~{layout/navbar}"></div>
+
+  <h2 class="mb-4">新增餐廳資料（商家）</h2>
+
+  <!-- 注意：multipart 才能上傳照片 -->
+  <form th:action="@{/merchant/restaurant/create}" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label class="form-label">店名</label>
+      <input type="text" class="form-control" name="name" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">地址</label>
+      <input type="text" class="form-control" name="address" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">電話</label>
+      <input type="text" class="form-control" name="phone">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">縣市</label>
+      <select class="form-select" name="county" required>
+        <option value="">請選擇</option>
+        <option>台北市</option><option>新北市</option><option>基隆市</option>
+        <option>桃園市</option><option>新竹市</option><option>新竹縣</option>
+        <option>苗栗縣</option><option>台中市</option><option>彰化縣</option>
+        <option>南投縣</option><option>雲林縣</option><option>嘉義市</option>
+        <option>嘉義縣</option><option>台南市</option><option>高雄市</option>
+        <option>屏東縣</option><option>台東縣</option><option>花蓮縣</option>
+        <option>宜蘭縣</option><option>澎湖縣</option><option>金門縣</option><option>連江縣</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">分類（可複選）</label><br>
+      <!-- 注意：name 同名 "type" 多個，後端用 List<String> 接 -->
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="早餐">
+        <label class="form-check-label">早餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="早午餐">
+        <label class="form-check-label">早午餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="午餐">
+        <label class="form-check-label">午餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="下午茶">
+        <label class="form-check-label">下午茶</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="小吃">
+        <label class="form-check-label">小吃</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="晚餐">
+        <label class="form-check-label">晚餐</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="甜點">
+        <label class="form-check-label">甜點</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="冰品">
+        <label class="form-check-label">冰品</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" value="銅板美食">
+        <label class="form-check-label">銅板美食</label>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">關鍵字（必填，空格分隔）</label>
+      <input type="text" class="form-control" name="keywords" placeholder="小籠包 餡餅 排隊" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">店家照片（最多 5 張）</label>
+      <input type="file" class="form-control" name="photos" multiple accept="image/*">
+      <div class="form-text">支援多檔上傳，僅儲存前 5 張。</div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">送出（進入審核）</button>
+    <a class="btn btn-outline-secondary" th:href="@{/merchant/restaurant/mine}">回我的餐廳</a>
+  </form>
+</body>
+</html>

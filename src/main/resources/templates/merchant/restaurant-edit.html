@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+  <meta charset="UTF-8">
+  <title>編輯餐廳（重新送審）</title>
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{layout/navbar}"></div>
+
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>編輯餐廳（重新送審）</h3>
+    <a class="btn btn-outline-secondary" th:href="@{/merchant/restaurant/mine}">返回我的餐廳</a>
+  </div>
+
+  <!-- 顯示上次退回原因（如果有） -->
+  <div class="alert alert-warning" th:if="${restaurant.rejectReason}">
+    <strong>退回原因：</strong>
+    <span th:text="${restaurant.rejectReason}"></span>
+  </div>
+
+  <form th:action="@{'/merchant/restaurant/edit/' + ${restaurant.id}}"
+        th:object="${restaurant}" method="post" class="row g-3">
+
+    <div class="col-md-6">
+      <label class="form-label">餐廳名稱</label>
+      <input type="text" class="form-control" th:field="*{name}" required>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">縣市</label>
+      <input type="text" class="form-control" th:field="*{county}" required>
+    </div>
+
+    <div class="col-md-8">
+      <label class="form-label">地址</label>
+      <input type="text" class="form-control" th:field="*{address}" required>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">電話</label>
+      <input type="text" class="form-control" th:field="*{phone}">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">分類</label>
+      <input type="text" class="form-control" th:field="*{type}" placeholder="例：小吃、甜點...">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">關鍵字</label>
+      <input type="text" class="form-control" th:field="*{keywords}" placeholder="以空白或逗號分隔">
+    </div>
+
+    <div class="col-12">
+      <button class="btn btn-primary" type="submit">儲存並重新送審</button>
+
+      <!-- 快捷：不改內容直接送審 -->
+      <form th:action="@{'/merchant/restaurant/resubmit/' + ${restaurant.id}}"
+            method="post" class="d-inline">
+        <button class="btn btn-outline-warning" type="submit">不改內容，直接重新送審</button>
+      </form>
+
+      <a class="btn btn-outline-secondary" th:href="@{/merchant/restaurant/mine}">取消</a>
+    </div>
+  </form>
+</div>
+</body>
+</html>

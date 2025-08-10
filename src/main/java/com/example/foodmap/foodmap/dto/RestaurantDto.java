@@ -17,12 +17,17 @@ public class RestaurantDto {
 
     private String uploaderNickname;
 
+    // 新增：審核狀態與退回原因
+    private String status;        // PENDING / APPROVED / REJECTED
+    private String rejectReason;  // 當 REJECTED 時顯示原因
+
     // ✅ 無參數建構子（必要）
     public RestaurantDto() {
     }
 
     public RestaurantDto(Long id, String name, String address, String phone, String county, String type,
-                         double avgRating, String thumbnail, boolean isFavorite, String uploaderNickname) {
+                         double avgRating, String thumbnail, boolean isFavorite, String uploaderNickname,
+                         String status, String rejectReason) {
         this.id = id;
         this.name = name;
         this.address = address;
@@ -33,85 +38,55 @@ public class RestaurantDto {
         this.thumbnail = thumbnail;
         this.isFavorite = isFavorite;
         this.uploaderNickname = uploaderNickname;
+        this.status = status;
+        this.rejectReason = rejectReason;
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public void setId(Long id) { this.id = id; }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public void setName(String name) { this.name = name; }
 
-    public String getAddress() {
-        return address;
-    }
+    public String getAddress() { return address; }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+    public void setAddress(String address) { this.address = address; }
 
-    public String getPhone() {
-        return phone;
-    }
+    public String getPhone() { return phone; }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public String getCounty() {
-        return county;
-    }
+    public String getCounty() { return county; }
 
-    public void setCounty(String county) {
-        this.county = county;
-    }
+    public void setCounty(String county) { this.county = county; }
 
-    public String getType() {
-        return type;
-    }
+    public String getType() { return type; }
 
-    public void setType(String type) {
-        this.type = type;
-    }
+    public void setType(String type) { this.type = type; }
 
-    public double getAvgRating() {
-        return avgRating;
-    }
+    public double getAvgRating() { return avgRating; }
 
-    public void setAvgRating(double avgRating) {
-        this.avgRating = avgRating;
-    }
+    public void setAvgRating(double avgRating) { this.avgRating = avgRating; }
 
-    public String getThumbnail() {
-        return thumbnail;
-    }
+    public String getThumbnail() { return thumbnail; }
 
-    public void setThumbnail(String thumbnail) {
-        this.thumbnail = thumbnail;
-    }
+    public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
 
-    public boolean isFavorite() {
-        return isFavorite;
-    }
+    public boolean isFavorite() { return isFavorite; }
 
-    public void setFavorite(boolean favorite) {
-        isFavorite = favorite;
-    }
+    public void setFavorite(boolean favorite) { isFavorite = favorite; }
 
-    public String getUploaderNickname() {
-        return uploaderNickname;
-    }
+    public String getUploaderNickname() { return uploaderNickname; }
 
-    public void setUploaderNickname(String uploaderNickname) {
-        this.uploaderNickname = uploaderNickname;
-    }
+    public void setUploaderNickname(String uploaderNickname) { this.uploaderNickname = uploaderNickname; }
+
+    public String getStatus() { return status; }
+
+    public void setStatus(String status) { this.status = status; }
+
+    public String getRejectReason() { return rejectReason; }
+
+    public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
 }

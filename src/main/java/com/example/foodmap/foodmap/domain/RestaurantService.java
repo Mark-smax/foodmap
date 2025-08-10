@@ -99,7 +99,7 @@ public class RestaurantService {
         return convertToDtoPage(page, memberId);
     }
 
-    // ===== 既有 DTO 轉換：不動 =====
+    // ===== DTO 轉換（已改用新建構子，帶入 status / rejectReason） =====
     private Page<RestaurantDto> convertToDtoPage(Page<Restaurant> page, Long memberId) {
         List<RestaurantDto> dtoList = page.getContent().stream().map(r -> {
             setAverageRating(r);
@@ -111,6 +111,9 @@ public class RestaurantService {
             }
 
             String uploaderName = getUploaderNickname(r.getCreatedBy());
+            String status = (r.getStatus() == null ? null : r.getStatus().name());
+            String rejectReason = r.getRejectReason();
+
             return new RestaurantDto(
                     r.getId(),
                     r.getName(),
@@ -121,7 +124,9 @@ public class RestaurantService {
                     r.getAvgRating(),
                     thumbnail,
                     isFav,
-                    uploaderName
+                    uploaderName,
+                    status,
+                    rejectReason
             );
         }).collect(Collectors.toList());
 
@@ -265,4 +270,55 @@ public class RestaurantService {
     public void updateRestaurant(Restaurant restaurant) {
         restaurantRepository.save(restaurant);
     }
+ // === 被退回後：修改內容並重新送審 ===
+    @Transactional
+    public Restaurant updateAndResubmit(Long id, Restaurant form, Long merchantId) {
+        // 只允許提交者本人操作
+        Restaurant r = restaurantRepository.findByIdAndSubmittedBy(id, merchantId)
+                .orElseThrow(() -> new IllegalArgumentException("找不到這筆餐廳，或你沒有權限操作"));
+
+        // 更新可編輯欄位（你需要的就補）
+        r.setName(form.getName());
+        r.setCounty(form.getCounty());
+        r.setAddress(form.getAddress());
+        r.setPhone(form.getPhone());
+        r.setType(form.getType());
+        r.setKeywords(form.getKeywords());
+
+        // 重新送審（清空舊審核結果）
+        r.setStatus(ModerationStatus.PENDING);
+        r.setSubmittedBy(merchantId);
+        r.setSubmittedAt(OffsetDateTime.now());
+        r.setReviewedBy(null);
+        r.setReviewedAt(null);
+        r.setRejectReason(null);
+
+        // 保底：若 createdBy 未設，補上
+        if (r.getCreatedBy() == null && merchantId != null) {
+            r.setCreatedBy(merchantId.intValue());
+        }
+
+        return restaurantRepository.save(r);
+    }
+
+    // === 被退回後：不改內容直接重新送審 ===
+    @Transactional
+    public Restaurant resubmitWithoutChange(Long id, Long merchantId) {
+        Restaurant r = restaurantRepository.findByIdAndSubmittedBy(id, merchantId)
+                .orElseThrow(() -> new IllegalArgumentException("找不到這筆餐廳，或你沒有權限操作"));
+
+        r.setStatus(ModerationStatus.PENDING);
+        r.setSubmittedBy(merchantId);
+        r.setSubmittedAt(OffsetDateTime.now());
+        r.setReviewedBy(null);
+        r.setReviewedAt(null);
+        r.setRejectReason(null);
+
+        if (r.getCreatedBy() == null && merchantId != null) {
+            r.setCreatedBy(merchantId.intValue());
+        }
+
+        return restaurantRepository.save(r);
+    }
+
 }

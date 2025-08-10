@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+  <meta charset="UTF-8">
+  <title>待審清單</title>
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet"/>
+  <style>.reason-input{min-width:220px;}</style>
+</head>
+<body>
+<div th:replace="~{layout/navbar}"></div>
+
+<div class="container my-4">
+  <div class="d-flex align-items-center justify-content-between">
+    <h3>餐廳審核</h3>
+    <div class="btn-group">
+      <a class="btn btn-outline-secondary" th:href="@{/admin/moderation/restaurants(status='PENDING')}">待審</a>
+      <a class="btn btn-outline-success" th:href="@{/admin/moderation/restaurants(status='APPROVED')}">已上架</a>
+      <a class="btn btn-outline-danger" th:href="@{/admin/moderation/restaurants(status='REJECTED')}">已退回</a>
+    </div>
+  </div>
+
+  <div th:if="${page.totalElements == 0}" class="alert alert-info mt-3">目前沒有資料。</div>
+
+  <div th:if="${page.totalElements > 0}" class="table-responsive mt-3">
+    <table class="table table-hover align-middle">
+      <thead>
+      <tr>
+        <th>#</th><th>餐廳</th><th>縣市/分類</th><th>狀態</th><th>退回原因</th><th class="text-end">操作</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r,stat : ${page.content}">
+        <td th:text="${stat.index + 1 + page.number * page.size}"></td>
+        <td>
+          <div class="fw-semibold" th:text="${r.name}"></div>
+          <div class="text-muted small" th:text="${r.address}"></div>
+        </td>
+        <td>
+          <div th:text="${r.county}"></div>
+          <div class="text-muted small" th:text="${r.type}"></div>
+        </td>
+        <td>
+          <span th:switch="${r.status}">
+            <span th:case="'APPROVED'" class="badge bg-success">已上架</span>
+            <span th:case="'PENDING'"  class="badge bg-warning text-dark">待審</span>
+            <span th:case="'REJECTED'" class="badge bg-danger">退回</span>
+            <span th:case="*" class="badge bg-secondary" th:text="${r.status}">未知</span>
+          </span>
+        </td>
+        <td>
+          <span th:text="${r.rejectReason}" th:if="${r.rejectReason}"></span>
+          <span th:if="${r.rejectReason == null}" class="text-muted">—</span>
+        </td>
+        <td class="text-end">
+          <form th:action="@{|/admin/moderation/restaurants/${r.id}/approve|}" method="post" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-success">通過</button>
+          </form>
+          <form th:action="@{|/admin/moderation/restaurants/${r.id}/reject|}" method="post" class="d-inline ms-2">
+            <input type="text" name="reason" class="form-control form-control-sm d-inline-block reason-input"
+                   placeholder="退回原因…" required>
+            <button type="submit" class="btn btn-sm btn-outline-danger ms-1">退回</button>
+          </form>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <nav>
+    <ul class="pagination">
+      <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+        <a class="page-link" th:href="@{|/admin/moderation/restaurants?status=${status}&page=${page.number - 1}|}">上一頁</a>
+      </li>
+      <li class="page-item disabled"><span class="page-link" th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1/1</span></li>
+      <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+        <a class="page-link" th:href="@{|/admin/moderation/restaurants?status=${status}&page=${page.number + 1}|}">下一頁</a>
+      </li>
+    </ul>
+  </nav>
+</div>
+</body>
+</html>

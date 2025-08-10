@@ -18,9 +18,26 @@ public class GlobalModelAttributes {
 
     @ModelAttribute("unreadCount")
     public Long unreadCount(HttpSession session) {
-        Object obj = session.getAttribute("loginMemberId");
-        if (obj == null) return 0L;
-        Long memberId = (obj instanceof Long l) ? l : Long.valueOf(obj.toString());
-        return notificationService.unreadCount(memberId);
+        try {
+            Object obj = session.getAttribute("loginMemberId");
+            if (obj == null) return 0L;
+
+            Long memberId = null;
+            if (obj instanceof Long l) {
+                memberId = l;
+            } else if (obj instanceof Integer i) {
+                memberId = i.longValue();
+            } else {
+                String s = obj.toString();
+                if (s == null || s.isBlank()) return 0L;
+                memberId = Long.parseLong(s); // 這行可能丟 NFE，所以包在 try/catch
+            }
+
+            if (memberId == null) return 0L;
+            return notificationService.unreadCount(memberId);
+        } catch (Exception e) {
+            // 任意錯誤都不要影響頁面渲染，直接顯示 0
+            return 0L;
+        }
     }
 }
