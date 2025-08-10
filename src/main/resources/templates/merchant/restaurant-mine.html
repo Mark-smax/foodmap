@@ -64,25 +64,32 @@
             <span th:if="${r.rejectReason == null}" class="text-muted">—</span>
           </td>
 
-          <!-- ✅ 本次更新的動作欄 -->
-          <td>
-            <!-- 已通過 -->
+          <!-- 動作欄 -->
+          <td class="d-flex flex-wrap gap-2">
+            <!-- 前台查看：現在 /restaurant/{id} 會自動轉到 /restaurant-detail?id= -->
             <a class="btn btn-sm btn-outline-secondary"
                th:href="@{'/restaurant/' + ${r.id}}"
                th:if="${r.status == 'APPROVED'}">前台查看</a>
 
+            <!-- 已上架也允許修改（會進編輯頁，送出時改成待審） -->
+            <a class="btn btn-sm btn-primary"
+               th:href="@{'/merchant/restaurant/edit/' + ${r.id}}"
+               th:if="${r.status == 'APPROVED'}">修改</a>
+
+            <!-- 待審：允許修改 -->
+            <a class="btn btn-sm btn-primary"
+               th:href="@{'/merchant/restaurant/edit/' + ${r.id}}"
+               th:if="${r.status == 'PENDING'}">修改</a>
+
             <!-- 退回：顯示兩個按鈕 -->
-            <div th:if="${r.status == 'REJECTED'}" class="d-flex gap-2">
-              <a class="btn btn-sm btn-primary"
-                 th:href="@{'/merchant/restaurant/edit/' + ${r.id}}">修改並重新送審</a>
+            <a class="btn btn-sm btn-primary"
+               th:href="@{'/merchant/restaurant/edit/' + ${r.id}}"
+               th:if="${r.status == 'REJECTED'}">修改並重新送審</a>
 
-              <form th:action="@{'/merchant/restaurant/resubmit/' + ${r.id}}" method="post" class="d-inline">
-                <button type="submit" class="btn btn-sm btn-outline-warning">直接重新送審</button>
-              </form>
-            </div>
-
-            <!-- 待審 -->
-            <span th:if="${r.status == 'PENDING'}" class="text-muted small">審核中</span>
+            <form th:if="${r.status == 'REJECTED'}"
+                  th:action="@{'/merchant/restaurant/resubmit/' + ${r.id}}" method="post" class="d-inline">
+              <button type="submit" class="btn btn-sm btn-outline-warning">直接重新送審</button>
+            </form>
           </td>
         </tr>
         </tbody>
@@ -94,8 +101,9 @@
         <li class="page-item" th:classappend="${page.first} ? 'disabled'">
           <a class="page-link" th:href="@{|/merchant/restaurant/mine?page=${page.number - 1}|}">上一頁</a>
         </li>
-        <li class="page-item disabled"><span class="page-link"
-             th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1/1</span></li>
+        <li class="page-item disabled">
+          <span class="page-link" th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1/1</span>
+        </li>
         <li class="page-item" th:classappend="${page.last} ? 'disabled'">
           <a class="page-link" th:href="@{|/merchant/restaurant/mine?page=${page.number + 1}|}">下一頁</a>
         </li>

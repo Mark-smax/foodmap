@@ -1,70 +1,173 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org/">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>編輯餐廳（重新送審）</title>
+  <title>編輯餐廳</title>
   <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet"/>
+  <style>
+    .help { font-size: .9rem; color: #6c757d; }
+  </style>
 </head>
 <body>
 <div th:replace="~{layout/navbar}"></div>
 
-<div class="container my-4">
+<div class="container my-4" th:object="${restaurant}">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>編輯餐廳（重新送審）</h3>
-    <a class="btn btn-outline-secondary" th:href="@{/merchant/restaurant/mine}">返回我的餐廳</a>
+    <h3>編輯餐廳</h3>
+    <a class="btn btn-secondary" th:href="@{/merchant/restaurant/mine}">返回</a>
   </div>
 
-  <!-- 顯示上次退回原因（如果有） -->
-  <div class="alert alert-warning" th:if="${restaurant.rejectReason}">
-    <strong>退回原因：</strong>
-    <span th:text="${restaurant.rejectReason}"></span>
-  </div>
+  <form th:action="@{'/merchant/restaurant/edit/' + *{id}}" method="post">
+    <!-- 基本資訊 -->
+    <div class="card mb-3">
+      <div class="card-header">基本資訊</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">餐廳名稱 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" th:field="*{name}" required>
+          </div>
 
-  <form th:action="@{'/merchant/restaurant/edit/' + ${restaurant.id}}"
-        th:object="${restaurant}" method="post" class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">縣市</label>
+            <input type="text" class="form-control" th:field="*{county}">
+          </div>
 
-    <div class="col-md-6">
-      <label class="form-label">餐廳名稱</label>
-      <input type="text" class="form-control" th:field="*{name}" required>
+          <div class="col-md-3">
+            <label class="form-label">電話</label>
+            <input type="text" class="form-control" th:field="*{phone}">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">地址</label>
+            <input type="text" class="form-control" th:field="*{address}">
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="col-md-6">
-      <label class="form-label">縣市</label>
-      <input type="text" class="form-control" th:field="*{county}" required>
+    <!-- 分類（多選） -->
+    <div class="card mb-3">
+      <div class="card-header">餐廳分類（可多選）</div>
+      <div class="card-body">
+        <p class="help mb-2">已選：<span th:text="*{type} ?: '（未選）'"></span></p>
+        <div class="row row-cols-2 row-cols-md-4 g-2">
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="中式"
+                     th:checked="${#strings.contains(restaurant.type, '中式')}">
+              <label class="form-check-label">中式</label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="日式"
+                     th:checked="${#strings.contains(restaurant.type, '日式')}">
+              <label class="form-check-label">日式</label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="韓式"
+                     th:checked="${#strings.contains(restaurant.type, '韓式')}">
+              <label class="form-check-label">韓式</label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="美式"
+                     th:checked="${#strings.contains(restaurant.type, '美式')}">
+              <label class="form-check-label">美式</label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="早午餐"
+                     th:checked="${#strings.contains(restaurant.type, '早午餐')}">
+              <label class="form-check-label">早午餐</label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="咖啡廳"
+                     th:checked="${#strings.contains(restaurant.type, '咖啡廳')}">
+              <label class="form-check-label">咖啡廳</label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="甜點"
+                     th:checked="${#strings.contains(restaurant.type, '甜點')}">
+              <label class="form-check-label">甜點</label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="type"
+                     value="素食"
+                     th:checked="${#strings.contains(restaurant.type, '素食')}">
+              <label class="form-check-label">素食</label>
+            </div>
+          </div>
+        </div>
+        <div class="help mt-2">送出時會由後端把多選結果以逗號合併存入 <code>Restaurant.type</code>。</div>
+      </div>
     </div>
 
-    <div class="col-md-8">
-      <label class="form-label">地址</label>
-      <input type="text" class="form-control" th:field="*{address}" required>
+    <!-- 其它資訊 -->
+    <div class="card mb-3">
+      <div class="card-header">其它資訊</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">關鍵字（用空白或逗號分隔）</label>
+            <input type="text" class="form-control" th:field="*{keywords}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">介紹</label>
+            <textarea class="form-control" rows="4" th:field="*{description}"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">營業時間</label>
+            <input type="text" class="form-control" th:field="*{openingHours}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">平均消費</label>
+            <input type="text" class="form-control" th:field="*{avgPrice}">
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="col-md-4">
-      <label class="form-label">電話</label>
-      <input type="text" class="form-control" th:field="*{phone}">
-    </div>
-
-    <div class="col-md-6">
-      <label class="form-label">分類</label>
-      <input type="text" class="form-control" th:field="*{type}" placeholder="例：小吃、甜點...">
-    </div>
-
-    <div class="col-md-6">
-      <label class="form-label">關鍵字</label>
-      <input type="text" class="form-control" th:field="*{keywords}" placeholder="以空白或逗號分隔">
-    </div>
-
-    <div class="col-12">
-      <button class="btn btn-primary" type="submit">儲存並重新送審</button>
-
-      <!-- 快捷：不改內容直接送審 -->
-      <form th:action="@{'/merchant/restaurant/resubmit/' + ${restaurant.id}}"
-            method="post" class="d-inline">
-        <button class="btn btn-outline-warning" type="submit">不改內容，直接重新送審</button>
-      </form>
-
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">送出修改（轉為待審）</button>
       <a class="btn btn-outline-secondary" th:href="@{/merchant/restaurant/mine}">取消</a>
     </div>
   </form>
 </div>
+
 </body>
 </html>
