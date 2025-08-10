@@ -69,7 +69,8 @@
 
       <!-- ✅ 隱藏評論 -->
       <div th:if="${r.isHidden == true}">
-  <p th:if="${loginMemberId == r.memberId or session.loginMemberRoles.displayName == '管理員'}">
+  <p th:if="${session.loginMemberRoles != null and (#strings.contains(session.loginMemberRoles, 'ADMIN') or #strings.contains(session.loginMemberRoles, '管理員'))}"
+">
     <i class="text-muted">此留言已被管理員設為隱藏：</i><br>
     <i th:text="${r.comment}"></i>
   </p>

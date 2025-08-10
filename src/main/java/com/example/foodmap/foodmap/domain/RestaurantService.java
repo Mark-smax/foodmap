@@ -1,5 +1,9 @@
 package com.example.foodmap.foodmap.domain;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.List;
@@ -27,16 +31,24 @@ public class RestaurantService {
     private final RestaurantFavoriteRepository favoriteRepository;
     private final MemberRepository memberRepository;
 
+    // ★ 新增：營業時間相關 Repository
+    private final RestaurantHourRepository hourRepository;
+    private final RestaurantSpecialHourRepository specialHourRepository;
+
     public RestaurantService(RestaurantRepository restaurantRepository,
                              RestaurantPhotoRepository photoRepository,
                              RestaurantReviewRepository reviewRepository,
                              RestaurantFavoriteRepository favoriteRepository,
-                             MemberRepository memberRepository) {
+                             MemberRepository memberRepository,
+                             RestaurantHourRepository hourRepository,
+                             RestaurantSpecialHourRepository specialHourRepository) {
         this.restaurantRepository = restaurantRepository;
         this.photoRepository = photoRepository;
         this.reviewRepository = reviewRepository;
         this.favoriteRepository = favoriteRepository;
         this.memberRepository = memberRepository;
+        this.hourRepository = hourRepository;
+        this.specialHourRepository = specialHourRepository;
     }
 
     // ===== 既有搜尋：不動，保持目前行為 =====
@@ -270,7 +282,8 @@ public class RestaurantService {
     public void updateRestaurant(Restaurant restaurant) {
         restaurantRepository.save(restaurant);
     }
- // === 被退回後：修改內容並重新送審 ===
+
+    // === 被退回後：修改內容並重新送審 ===
     @Transactional
     public Restaurant updateAndResubmit(Long id, Restaurant form, Long merchantId) {
         // 只允許提交者本人操作
@@ -321,4 +334,91 @@ public class RestaurantService {
         return restaurantRepository.save(r);
     }
 
+    // ============================================================
+    // ============ ★★★ 營業時間：查詢與維護 API ★★★ ============
+    // ============================================================
+
+    /**
+     * 判斷指定時間點是否「休息」：
+     * 1) 若該日有 SpecialHour -> 以特例為準
+     * 2) 否則看固定每週的 RestaurantHour
+     */
+    @Transactional(readOnly = true)
+    public boolean isClosedAt(Long restaurantId, LocalDateTime when) {
+        LocalDate date = when.toLocalDate();
+        LocalTime time = when.toLocalTime();
+
+        // 先看特例
+        var specialOpt = specialHourRepository.findByRestaurantIdAndSpecificDate(restaurantId, date);
+        if (specialOpt.isPresent()) {
+            var s = specialOpt.get();
+            if (s.isClosedAllDay()) return true; // 整天公休
+            if (s.getOpenTime() == null || s.getCloseTime() == null) return true; // 無有效時段視為休息
+            boolean within = !time.isBefore(s.getOpenTime()) && time.isBefore(s.getCloseTime());
+            return !within;
+        }
+
+        // 沒特例 -> 看固定班表
+        DayOfWeek dow = when.getDayOfWeek();
+        var todays = hourRepository.findByRestaurantIdAndDayOfWeekOrderByIdAsc(restaurantId, dow);
+        if (todays.isEmpty()) {
+            // 未設定 -> 視為休息
+            return true;
+        }
+
+        // 若其中任何一筆是整天公休 -> 視為休息（可依需求調整策略）
+        for (var h : todays) {
+            if (h.isClosedAllDay()) return true;
+        }
+
+        // 只要命中任一有效時段就算營業中
+        boolean open = false;
+        for (var h : todays) {
+            if (h.getOpenTime() == null || h.getCloseTime() == null) continue;
+            if (!time.isBefore(h.getOpenTime()) && time.isBefore(h.getCloseTime())) {
+                open = true;
+                break;
+            }
+        }
+        return !open;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RestaurantSpecialHour> listSpecialHours(Long restaurantId, LocalDate from, LocalDate to) {
+        return specialHourRepository.findByRestaurantIdAndSpecificDateBetweenOrderBySpecificDateAsc(
+                restaurantId, from, to);
+    }
+
+    /**
+     * 覆蓋整週固定班表（簡化作法：清掉舊資料、再存新資料）
+     */
+    @Transactional
+    public void replaceWeeklyHours(Long restaurantId, List<RestaurantHour> newHours) {
+        hourRepository.deleteByRestaurantId(restaurantId);
+        if (newHours != null && !newHours.isEmpty()) {
+            for (var h : newHours) {
+                h.setRestaurantId(restaurantId);
+            }
+            hourRepository.saveAll(newHours);
+        }
+    }
+
+    /**
+     * 新增或更新「特例營業時間」
+     */
+    @Transactional
+    public void upsertSpecialHour(RestaurantSpecialHour spec) {
+        var opt = specialHourRepository.findByRestaurantIdAndSpecificDate(
+                spec.getRestaurantId(), spec.getSpecificDate());
+        if (opt.isPresent()) {
+            var exist = opt.get();
+            exist.setClosedAllDay(spec.isClosedAllDay());
+            exist.setOpenTime(spec.getOpenTime());
+            exist.setCloseTime(spec.getCloseTime());
+            exist.setNote(spec.getNote());
+            specialHourRepository.save(exist);
+        } else {
+            specialHourRepository.save(spec);
+        }
+    }
 }
