@@ -44,12 +44,12 @@ public class AdminRestaurantController {
 
         if (roleObj == null) {
             redirectAttrs.addFlashAttribute("error", "請先登入！");
-            return "redirect:/login";
+            return "redirect:/member/login";
         }
 
         if (!"ADMIN".equals(roleObj.toString())) {
             redirectAttrs.addFlashAttribute("error", "您沒有權限進入此頁面！");
-            return "redirect:/";
+            return "redirect:/member/login";
         }
 
         return "restaurant-create";
@@ -70,7 +70,7 @@ public class AdminRestaurantController {
         Object roleObj = session.getAttribute("loginMemberRoles");
         if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttributes.addFlashAttribute("error", "您沒有權限執行此操作！");
-            return "redirect:/login";
+            return "redirect:/member/login";
         }
 
         // 必填欄位檢查
@@ -131,7 +131,7 @@ public class AdminRestaurantController {
             redirectAttributes.addFlashAttribute("error", "上傳失敗：檔案或表單總大小超過限制（單檔 ≤ 15MB、總計 ≤ 50MB）。");
             return "redirect:/admin/restaurant/create";
         } catch (MultipartException ex) {
-            // 例如：Tomcat 解析 multipart 失敗（常見於 server.tomcat.max-http-form-post-size 太小）
+            // 例如：Tomcat 解析 multipart 失敗（常見於 server.tomcat.max-http-form-post-size / max-part-count 太小）
             redirectAttributes.addFlashAttribute("error", "上傳失敗：無法解析上傳資料，請確認檔案大小與格式。");
             return "redirect:/admin/restaurant/create";
         } catch (IOException ex) {
@@ -149,7 +149,7 @@ public class AdminRestaurantController {
         Object roleObj = session.getAttribute("loginMemberRoles");
         if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttrs.addFlashAttribute("error", "您沒有權限執行此操作！");
-            return "redirect:/login";
+            return "redirect:/member/login";
         }
 
         Restaurant restaurant = restaurantService.getRestaurantById(id);
@@ -176,7 +176,7 @@ public class AdminRestaurantController {
         Object roleObj = session.getAttribute("loginMemberRoles");
         if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttributes.addFlashAttribute("error", "您沒有權限執行此操作！");
-            return "redirect:/login";
+            return "redirect:/member/login";
         }
 
         Restaurant restaurant = restaurantService.getRestaurantById(id);
@@ -220,7 +220,7 @@ public class AdminRestaurantController {
         Object roleObj = session.getAttribute("loginMemberRoles");
         if (roleObj == null || !"ADMIN".equals(roleObj.toString())) {
             redirectAttrs.addFlashAttribute("error", "您沒有權限執行此操作！");
-            return "redirect:/login";
+            return "redirect:/member/login";
         }
 
         restaurantService.deleteRestaurant(id);
