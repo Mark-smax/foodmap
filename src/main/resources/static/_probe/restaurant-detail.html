@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>Probe - Restaurant Detail</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Noto Sans TC", Arial; line-height: 1.5; }
+    .muted { color:#666; }
+    .photos { display:flex; flex-wrap:wrap; gap:12px; }
+    .photos img { width:240px; height:160px; object-fit:cover; border:1px solid #ddd; border-radius:8px; }
+    pre { background:#f5f5f5; padding:8px; border-radius:6px; overflow:auto; }
+    .error { color:#b00020; white-space:pre-wrap; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; margin-left:6px; }
+    .pill.ok { background:#e6f7e9; color:#1a7f37; border:1px solid #b7e3c1; }
+    .pill.off { background:#fff3cd; color:#8a6d3b; border:1px solid #ffe49c; }
+    .reviews { margin-top:20px; }
+    .review { border-top:1px solid #eee; padding:10px 0; }
+    .review .meta { color:#666; font-size:13px; }
+    .pager { display:flex; gap:8px; margin-top:8px; }
+    .form { margin-top:16px; display:flex; flex-direction:column; gap:8px; max-width:520px; }
+    .form input, .form textarea, .form select { padding:6px; border:1px solid #ccc; border-radius:6px; }
+    .form button { padding:8px 12px; }
+  </style>
+</head>
+<body>
+  <h1>Probe: /api/restaurants/{id}/details</h1>
+
+  <div id="root">Loading…</div>
+
+  <h3>Raw JSON</h3>
+  <pre id="raw">尚未載入</pre>
+  <div class="error" id="err"></div>
+
+  <script>
+    function guessMime(b64){
+      if(!b64) return "image/jpeg";
+      if (b64.startsWith("iVBOR")) return "image/png";
+      if (b64.startsWith("/9j/"))  return "image/jpeg";
+      return "image/jpeg";
+    }
+    function fmt(ts){
+      if(!ts) return "";
+      try { return new Date(ts).toLocaleString(); } catch { return String(ts); }
+    }
+
+    function promptForId() {
+      const root = document.querySelector('#root');
+      root.innerHTML = `
+        <label>請輸入餐廳 ID：
+          <input id="rid" type="number" min="1" style="width:120px">
+        </label>
+        <button id="go">載入</button>
+      `;
+      document.querySelector('#go').onclick = () => {
+        const v = (document.querySelector('#rid').value || '').trim();
+        if (!v || isNaN(Number(v)) || Number(v) <= 0) return;
+        location.search = '?id=' + Number(v);
+      };
+    }
+
+    async function load() {
+      const sp = new URLSearchParams(location.search);
+      const idParam = (sp.get('id') || '').trim();
+
+      if (!idParam || idParam.toLowerCase() === 'null' || isNaN(Number(idParam))) {
+        document.querySelector('#raw').textContent = '尚未載入（缺少 ?id=...）';
+        promptForId();
+        return;
+      }
+      const id = Number(idParam);
+
+      const root = document.querySelector('#root');
+      const raw  = document.querySelector('#raw');
+      const err  = document.querySelector('#err');
+
+      try {
+        const res = await fetch(`/api/restaurants/${id}/details`);
+        if (!res.ok) {
+          const text = await res.text();
+          err.textContent = `HTTP ${res.status} ${res.statusText}\n` + text;
+          root.textContent = '載入失敗（請看下方錯誤訊息）';
+          return;
+        }
+        const d = await res.json();
+        raw.textContent = JSON.stringify(d, null, 2);
+
+        const r = d.restaurant || d;
+
+        const name      = r.name || '(無名)';
+        const county    = r.county || '';
+        const type      = r.type || r.category || '';
+        const avgRating = r.avgRating ?? r.rating ?? '-';
+        const phone     = r.phone || '-';
+        const address   = r.address || '-';
+
+        const openNow        = d.openNow;
+        const todayRange     = d.todayRange;
+        const todayStatus    = d.todayStatusText;
+        const todayLabel     = d.todayLabel;
+        const pill = (openNow === true)
+          ? `<span class="pill ok">營業中</span>`
+          : (openNow === false ? `<span class="pill off">${todayStatus || '已打烊'}</span>` : '');
+
+        root.innerHTML = `
+          <h2>${name} ${pill}</h2>
+          <div class="muted">${county}｜${type}</div>
+          <div>⭐ ${avgRating}</div>
+          <div>電話：${phone}</div>
+          <div>地址：${address}</div>
+          ${todayLabel || todayRange || todayStatus ? `
+            <div>今日 ${todayLabel || ''}：${todayRange || '-'}（${todayStatus || ''}）</div>
+          ` : ''}
+          <hr>
+          <h3>照片</h3>
+          <div class="photos" id="photos"></div>
+
+          <div class="reviews">
+            <h3>評論</h3>
+            <div id="reviewList"></div>
+            <div class="pager">
+              <button id="prev">上一頁</button>
+              <span id="pinfo"></span>
+              <button id="next">下一頁</button>
+            </div>
+
+            <div class="form">
+              <h4>新增評論（測試用）</h4>
+              <label>memberId（整數）<input id="mId" type="number" value="1"></label>
+              <label>評分
+                <select id="rate">
+                  <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
+                </select>
+              </label>
+              <label>留言<textarea id="cmt" rows="3" placeholder="好吃～"></textarea></label>
+              <button id="submitReview">送出評論</button>
+              <div class="muted">送出後會自動重載第一頁。</div>
+            </div>
+          </div>
+        `;
+
+        // 照片
+        const box = document.querySelector('#photos');
+        const urlPhotos = Array.isArray(d.photos) ? d.photos : [];
+        if (urlPhotos.length > 0) {
+          urlPhotos.slice(0, 12).forEach(p => {
+            const img = new Image();
+            img.src = p.url || `/api/restaurants/photos/${p.id}`;
+            img.loading = 'lazy';
+            box.appendChild(img);
+          });
+        } else if (Array.isArray(d.photoBase64List) && d.photoBase64List.length) {
+          d.photoBase64List.slice(0, 12).forEach(b64 => {
+            const img = new Image();
+            img.src = `data:${guessMime(b64)};base64,${b64}`;
+            img.loading = 'lazy';
+            box.appendChild(img);
+          });
+        } else {
+          box.textContent = '（沒有照片）';
+        }
+
+        // 評論分頁
+        let cur = 0, size = 5, order = 'desc', sortBy = 'createdTime', includeHidden = false;
+
+        async function loadReviews() {
+          const res = await fetch(`/api/restaurants/${id}/reviews?page=${cur}&size=${size}&sortBy=${sortBy}&order=${order}&includeHidden=${includeHidden}`);
+          const page = await res.json();
+          renderReviews(page);
+        }
+
+        function renderReviews(page){
+          const list = document.querySelector('#reviewList');
+          list.innerHTML = '';
+          if (!page.content || page.content.length === 0) {
+            list.textContent = '（尚無評論）';
+          } else {
+            page.content.forEach(v => {
+              const div = document.createElement('div');
+              div.className = 'review';
+              div.innerHTML = `
+                <div><b>${v.memberNickname || '匿名'}</b> ｜ ⭐ ${v.rating}</div>
+                <div class="meta">${fmt(v.createdTime)} ${v.hidden ? '（已隱藏）' : ''}</div>
+                <div>${(v.comment || '').replaceAll('<','&lt;')}</div>
+              `;
+              list.appendChild(div);
+            });
+          }
+          document.querySelector('#pinfo').textContent = `第 ${page.number + 1} / ${page.totalPages || 1} 頁，共 ${page.totalElements} 筆`;
+          document.querySelector('#prev').disabled = page.number <= 0;
+          document.querySelector('#next').disabled = page.number + 1 >= (page.totalPages || 1);
+        }
+
+        document.querySelector('#prev').onclick = () => { if (cur > 0) { cur--; loadReviews(); } };
+        document.querySelector('#next').onclick = () => { cur++; loadReviews(); };
+
+        // 送出評論
+        document.querySelector('#submitReview').onclick = async () => {
+          const memberId = Number(document.querySelector('#mId').value);
+          const rating   = Number(document.querySelector('#rate').value);
+          const comment  = (document.querySelector('#cmt').value || '').trim();
+          if (!memberId || !rating || !comment) { alert('memberId / rating / comment 都要填'); return; }
+          const res = await fetch(`/api/restaurants/${id}/reviews`, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ memberId, rating, comment })
+          });
+          if (!res.ok) {
+            const t = await res.text();
+            alert('建立失敗：' + t);
+            return;
+          }
+          cur = 0; // 回到第一頁
+          document.querySelector('#cmt').value = '';
+          await loadReviews();
+        };
+
+        // 初次載入
+        await loadReviews();
+
+      } catch (e) {
+        err.textContent = (e && e.stack) ? e.stack : String(e);
+        document.querySelector('#root').textContent = '載入失敗（請看下方錯誤訊息）';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

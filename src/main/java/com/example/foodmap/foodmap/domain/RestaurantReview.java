@@ -2,10 +2,17 @@ package com.example.foodmap.foodmap.domain;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
 import com.example.foodmap.member.domain.Member;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "restaurant_review")
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})   // 忽略 Hibernate 代理屬性
+@JsonInclude(JsonInclude.Include.NON_NULL)                      // 只輸出非 null 欄位
 public class RestaurantReview {
 
     @Id
@@ -15,7 +22,7 @@ public class RestaurantReview {
     @Column(name = "restaurant_id", nullable = false)
     private Long restaurantId;
 
-    // ✅ 改為 Integer，與 SQL Server INT 對齊
+    // 與資料庫 INT 對齊
     @Column(name = "member_id", nullable = false)
     private Integer memberId;
 
@@ -28,16 +35,26 @@ public class RestaurantReview {
     @Column(name = "created_time", nullable = false)
     private LocalDateTime createdTime;
 
-    // 多對一關聯，與 Member 資料表進行關聯
+    /**
+     * 多對一關聯（LAZY）
+     * 重點：避免把 Hibernate 代理序列化到 JSON，所以加 @JsonIgnore
+     * 真正要回前端的資訊（例如暱稱）用下方的 transient 欄位輸出。
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", insertable = false, updatable = false)
+    @JsonIgnore
     private Member member;
 
     @Column(name = "is_hidden", nullable = false)
     private Boolean isHidden = false;
 
-    // 顯示評論者暱稱（不入庫）
+    /**
+     * 顯示評論者暱稱（不入庫）
+     * 建議在 Service 組 DTO 時主動塞進來；
+     * 若未手動塞、且當前 session 仍開啟，getter 會從 LAZY member 取暱稱。
+     */
     @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String memberNickName;
 
     public RestaurantReview() {}
@@ -78,10 +95,12 @@ public class RestaurantReview {
     public void setIsHidden(Boolean isHidden) { this.isHidden = isHidden; }
 
     public String getMemberNickName() {
+        // 若 Service 先 set 了就直接回；否則在 session 開啟下可從 LAZY member 取值
+        if (this.memberNickName != null) return this.memberNickName;
         if (this.member != null) {
-            return this.member.getMemberNickName();
+            try { return this.member.getMemberNickName(); } catch (Exception ignore) {}
         }
-        return memberNickName;
+        return null;
     }
     public void setMemberNickName(String memberNickName) { this.memberNickName = memberNickName; }
 }

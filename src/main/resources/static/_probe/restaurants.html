@@ -1,0 +1,125 @@
+<!-- src/main/resources/static/_probe/restaurants.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>Probe - Restaurants</title>
+  <style>
+    body{font-family:system-ui,-apple-system,"Noto Sans TC",Arial}
+    .row{display:flex;gap:12px;margin:12px 0;flex-wrap:wrap}
+    .card{border:1px solid #ddd;border-radius:8px;padding:12px;width:260px}
+    .muted{color:#666;font-size:12px}
+    .list{display:flex;flex-wrap:wrap;gap:12px}
+    .pager{display:flex;gap:8px;align-items:center;margin:12px 0}
+    input,select,button{height:32px}
+  </style>
+</head>
+<body>
+  <h1>Probe: /api/restaurants</h1>
+
+  <div class="row">
+    <label>縣市：<input id="county" placeholder="例：屏東縣"></label>
+    <label>分類：<input id="type" placeholder="例：早餐"></label>
+    <label>關鍵字：<input id="keyword" placeholder="例：牛肉麵"></label>
+    <label>minRating：<input id="minRating" type="number" min="0" max="5" step="0.5" value="0"></label>
+    <label>sortBy：
+      <select id="sortBy">
+        <option value="rating">rating</option>
+        <option value="reviewedAt">reviewedAt</option>
+        <option value="name">name</option>
+      </select>
+    </label>
+    <label>order：
+      <select id="order">
+        <option value="desc">desc</option>
+        <option value="asc">asc</option>
+      </select>
+    </label>
+    <label>size：
+      <select id="size">
+        <option>10</option><option>12</option><option>20</option>
+      </select>
+    </label>
+    <label>memberId：<input id="memberId" type="number" placeholder="例：1"></label>
+    <button id="btn">搜尋</button>
+  </div>
+
+  <div class="pager">
+    <button id="prev">&lt; 前一頁</button>
+    <span id="pageInfo"></span>
+    <button id="next">下一頁 &gt;</button>
+  </div>
+
+  <div id="list" class="list"></div>
+
+  <script>
+    let state = { page: 0, totalPages: 0 };
+
+    function buildParams() {
+      const county = document.querySelector('#county').value.trim();
+      const type = document.querySelector('#type').value.trim(); // 單一字串
+      const keyword = document.querySelector('#keyword').value.trim();
+      const memberId = document.querySelector('#memberId').value.trim();
+      const minRating = document.querySelector('#minRating').value.trim();
+      const sortBy = document.querySelector('#sortBy').value;
+      const order = document.querySelector('#order').value;
+      const size = document.querySelector('#size').value;
+
+      const p = new URLSearchParams();
+      if (county) p.set('county', county);
+      if (type) p.set('type', type);
+      if (keyword) p.set('keyword', keyword);
+      if (memberId) p.set('memberId', memberId);
+      if (minRating) p.set('minRating', minRating);
+      p.set('sortBy', sortBy);
+      p.set('order', order);
+      p.set('size', size);
+      p.set('page', state.page);
+      return p;
+    }
+
+    async function load() {
+      const params = buildParams();
+      const res = await fetch(`/api/restaurants?${params.toString()}`);
+      if (!res.ok) {
+        document.querySelector('#list').innerHTML = `<div>HTTP ${res.status}</div>`;
+        return;
+      }
+      const data = await res.json();
+      const items = Array.isArray(data) ? data : (data.content || []);
+      state.totalPages = data.totalPages ?? 1;
+      document.querySelector('#pageInfo').textContent =
+        `第 ${ (data.number ?? state.page) + 1 } / ${ state.totalPages } 頁（共 ${data.totalElements ?? items.length} 筆）`;
+
+      const list = document.querySelector('#list');
+      list.innerHTML = '';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        const name = item.name || '(無名)';
+        const county = item.county || '';
+        const type = item.type || item.category || '';
+        const rating = item.avgRating ?? item.rating ?? '-';
+        div.innerHTML = `
+          <div><strong>${name}</strong></div>
+          <div class="muted">${county}｜${type}</div>
+          <div>⭐ ${rating}</div>
+          <div class="muted">${item.address || ''}</div>
+          <a href="/_probe/restaurant-detail.html?id=${item.id}">詳情</a>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    document.querySelector('#btn').addEventListener('click', () => { state.page = 0; load(); });
+    document.querySelector('#prev').addEventListener('click', () => {
+      if (state.page > 0) { state.page--; load(); }
+    });
+    document.querySelector('#next').addEventListener('click', () => {
+      if (state.page + 1 < state.totalPages) { state.page++; load(); }
+    });
+
+    load(); // 預設載入
+  </script>
+</body>
+</html>

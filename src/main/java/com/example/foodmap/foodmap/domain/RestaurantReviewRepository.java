@@ -1,35 +1,36 @@
 package com.example.foodmap.foodmap.domain;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.example.foodmap.foodmap.domain.RestaurantReview;
+import java.util.List;
 
 @Repository
 public interface RestaurantReviewRepository extends JpaRepository<RestaurantReview, Long> {
 
-    // 🔍 根據餐廳 ID 取得所有評論
+    // 依餐廳查全部評論（不分頁）
     List<RestaurantReview> findByRestaurantId(Long restaurantId);
 
-    // 🔍 根據餐廳 ID 取得評論（依時間排序，給詳細頁用）
+    // 依餐廳查全部評論（時間新到舊）
     List<RestaurantReview> findByRestaurantIdOrderByCreatedTimeDesc(Long restaurantId);
 
-    // ✅ 檢查某會員是否對某餐廳已經發表過評論（用於防止重複評論）
-    boolean existsByRestaurantIdAndMemberId(Long restaurantId, Long memberId);
+    // 該會員是否已對該餐廳評論（避免重複評論）
+    boolean existsByRestaurantIdAndMemberId(Long restaurantId, Integer memberId);
 
-    // ❌ 刪除特定會員對特定餐廳的評論（用於取消評論功能）
-    void deleteByRestaurantIdAndMemberId(Long restaurantId, Long memberId);
+    // 刪除某會員對該餐廳的評論
+    void deleteByRestaurantIdAndMemberId(Long restaurantId, Integer memberId);
 
-    // ❌ 刪除自己的評論（安全性更高，只刪除該會員的）
-    void deleteByIdAndMemberId(Long id, Long memberId);
+    // 刪除自己的某一筆評論
+    void deleteByIdAndMemberId(Long id, Integer memberId);
 
-    // 🔍 找出某會員自己發表的特定評論（用於編輯與刪除權限確認）
+    // 取某會員自己的某一筆評論（例如做權限檢查）
     RestaurantReview findByIdAndMemberId(Long id, Integer memberId);
-    
-    // 查詢根據 reviewId 和 memberId 的評論
-    RestaurantReview findByIdAndMemberId(Long reviewId, Long memberId);
 
+    // 分頁查全部評論（含隱藏與未隱藏）
+    Page<RestaurantReview> findByRestaurantId(Long restaurantId, Pageable pageable);
+
+    // 分頁查未隱藏評論
+    Page<RestaurantReview> findByRestaurantIdAndIsHiddenFalse(Long restaurantId, Pageable pageable);
 }
-

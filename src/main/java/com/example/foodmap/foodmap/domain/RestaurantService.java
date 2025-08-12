@@ -18,9 +18,13 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
 
+import com.example.foodmap.foodmap.dto.PhotoDto;           // STEP1
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.foodmap.dto.RestaurantDto;
+import com.example.foodmap.foodmap.dto.ReviewDto;          // STEP2
 import com.example.foodmap.member.domain.Member;
 import com.example.foodmap.member.domain.MemberRepository;
 
@@ -33,7 +37,7 @@ public class RestaurantService {
     private final RestaurantFavoriteRepository favoriteRepository;
     private final MemberRepository memberRepository;
 
-    // ★ 新增：營業時間相關 Repository
+    // 營業時間
     private final RestaurantHourRepository hourRepository;
     private final RestaurantSpecialHourRepository specialHourRepository;
 
@@ -53,13 +57,12 @@ public class RestaurantService {
         this.specialHourRepository = specialHourRepository;
     }
 
-    // ===== 既有搜尋：不動，保持目前行為 =====
+    // ===== 搜尋（保留） =====
     public Page<RestaurantDto> searchRestaurants(String county, Double minRating, String type, Pageable pageable, Long memberId) {
         boolean hasCounty = county != null && !county.trim().isEmpty();
-        boolean hasType = type != null && !type.trim().isEmpty();
+        boolean hasType   = type   != null && !type.trim().isEmpty();
 
         Page<Restaurant> page;
-
         if (hasCounty && hasType) {
             page = restaurantRepository.findByCountyAndRatingGreaterThanEqualAndTypeContainingIgnoreCase(
                     county, minRating, type, pageable);
@@ -70,7 +73,6 @@ public class RestaurantService {
         } else {
             return Page.empty(pageable);
         }
-
         return convertToDtoPage(page, memberId);
     }
 
@@ -84,7 +86,6 @@ public class RestaurantService {
         return convertToDtoPage(page, memberId);
     }
 
-    // ===== 新增：商家提交流程（進入審核） =====
     @Transactional
     public Restaurant submitByMerchant(Restaurant r, Long merchantId) {
         r.setStatus(ModerationStatus.PENDING);
@@ -93,39 +94,32 @@ public class RestaurantService {
         r.setReviewedBy(null);
         r.setReviewedAt(null);
         r.setRejectReason(null);
-
-        // 若尚未帶 createdBy，順手帶上（你的 createdBy 是 Integer）
         if (r.getCreatedBy() == null && merchantId != null) {
             r.setCreatedBy(merchantId.intValue());
         }
         return restaurantRepository.save(r);
     }
 
-    // ===== 新增：商家自己的餐廳列表（含 PENDING/REJECTED/APPROVED 但僅限本人）=====
     public Page<RestaurantDto> searchMine(Long merchantId, Pageable pageable) {
         Page<Restaurant> page = restaurantRepository.findBySubmittedBy(merchantId, pageable);
         return convertToDtoPage(page, merchantId);
     }
 
-    // ===== 新增：公開列表僅抓已核准（之後控制器切換會用）=====
     public Page<RestaurantDto> searchApprovedAll(Pageable pageable, Long memberId) {
         Page<Restaurant> page = restaurantRepository.findByStatus(ModerationStatus.APPROVED, pageable);
         return convertToDtoPage(page, memberId);
     }
 
-    // ===== DTO 轉換（已改用新建構子，帶入 status / rejectReason） =====
     private Page<RestaurantDto> convertToDtoPage(Page<Restaurant> page, Long memberId) {
         List<RestaurantDto> dtoList = page.getContent().stream().map(r -> {
             setAverageRating(r);
             String thumbnail = getRandomThumbnail(r.getId());
 
-            boolean isFav = false;
-            if (memberId != null) {
-                isFav = favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
-            }
+            boolean isFav = (memberId != null) &&
+                    favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
 
             String uploaderName = getUploaderNickname(r.getCreatedBy());
-            String status = (r.getStatus() == null ? null : r.getStatus().name());
+            String status       = (r.getStatus() == null ? null : r.getStatus().name());
             String rejectReason = r.getRejectReason();
 
             return new RestaurantDto(
@@ -171,7 +165,7 @@ public class RestaurantService {
         return null;
     }
 
-    // ===== 既有 CRUD：不動 =====
+    // ===== 既有 CRUD =====
     @Transactional
     public Restaurant createRestaurant(Restaurant restaurant) {
         return restaurantRepository.save(restaurant);
@@ -208,15 +202,13 @@ public class RestaurantService {
     @Transactional
     public void toggleFavorite(Long restaurantId, Long memberId) {
         if (memberId == null) return;
-
         boolean exists = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
-
         if (exists) {
             favoriteRepository.deleteByRestaurantIdAndMemberId(restaurantId, memberId);
         } else {
             RestaurantFavorite fav = new RestaurantFavorite();
             fav.setRestaurantId(restaurantId);
-            fav.setMemberId(memberId); // ✅ Long
+            fav.setMemberId(memberId);
             favoriteRepository.save(fav);
         }
     }
@@ -235,33 +227,47 @@ public class RestaurantService {
     }
 
     /**
-     * ✅ 餐廳詳細資訊：加入 weeklyHours / 今日狀態（openNow、todayRange、todayStatusText、todayLabel）
+     * 餐廳詳細資訊（Step1: photos→URL；Step2: reviews→ReviewDto）
      */
     public RestaurantDetailsDTO getRestaurantDetails(Long restaurantId, Long memberId) {
         Restaurant restaurant = getRestaurantById(restaurantId);
         setAverageRating(restaurant);
 
-        List<String> base64Photos = getPhotosByRestaurantId(restaurantId).stream()
-            .map(photo -> Base64.getEncoder().encodeToString(photo.getImage()))
-            .collect(Collectors.toList());
-
         List<RestaurantReview> reviews = getReviewsByRestaurantId(restaurantId);
 
-        boolean isFavorite = false;
-        if (memberId != null) {
-            isFavorite = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
-        }
+        boolean isFavorite = (memberId != null) &&
+                favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
 
         String uploaderNickname = getUploaderNickname(restaurant.getCreatedBy());
 
-        // 先建立 DTO（舊五參數建構子）
-        RestaurantDetailsDTO dto = new RestaurantDetailsDTO(restaurant, base64Photos, reviews, isFavorite, uploaderNickname);
+        // 用無參建構子逐一 set，避免舊建構子型別不相容
+        RestaurantDetailsDTO dto = new RestaurantDetailsDTO();
+        dto.setRestaurant(restaurant);
+        dto.setFavorite(isFavorite);
+        dto.setUploaderNickname(uploaderNickname);
 
-        // === 營業時間週表 ===
+        // 照片（URL）
+        dto.setPhotos(buildPhotoDtos(restaurantId));
+
+        // 評論轉 ReviewDto（時間保留 LocalDateTime，前端格式化）
+        List<ReviewDto> reviewDtos = reviews.stream()
+            .map(rv -> new ReviewDto(
+                    rv.getId(),
+                    rv.getMemberId() == null ? null : rv.getMemberId().longValue(),
+                    getUploaderNickname(rv.getMemberId()),
+                    rv.getRating(),
+                    rv.getComment(),
+                    rv.getCreatedTime(),                // 傳 LocalDateTime
+                    Boolean.TRUE.equals(rv.getIsHidden())
+            ))
+            .collect(Collectors.toList());
+        dto.setReviews(reviewDtos);
+
+        // 營業時間週表
         LinkedHashMap<DayOfWeek, List<String>> weekly = buildWeeklyHours(restaurantId);
         dto.setWeeklyHours(weekly);
 
-        // === 今日狀態 ===
+        // 今日狀態
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         DayOfWeek dow = today.getDayOfWeek();
@@ -306,6 +312,7 @@ public class RestaurantService {
 
         return dto;
     }
+
     private void setAverageRating(Restaurant restaurant) {
         List<RestaurantReview> reviews = reviewRepository.findByRestaurantId(restaurant.getId());
         if (!reviews.isEmpty()) {
@@ -322,7 +329,6 @@ public class RestaurantService {
     public List<Restaurant> getTopRestaurantsByAvgRating(int limit) {
         List<Restaurant> all = restaurantRepository.findAll();
         all.forEach(this::setAverageRating);
-
         return all.stream()
                 .sorted((a, b) -> Double.compare(b.getAvgRating(), a.getAvgRating()))
                 .limit(limit)
@@ -337,14 +343,12 @@ public class RestaurantService {
         restaurantRepository.save(restaurant);
     }
 
-    // === 被退回後：修改內容並重新送審 ===
+    // 被退回後：修改內容並重新送審
     @Transactional
     public Restaurant updateAndResubmit(Long id, Restaurant form, Long merchantId) {
-        // 只允許提交者本人操作
         Restaurant r = restaurantRepository.findByIdAndSubmittedBy(id, merchantId)
                 .orElseThrow(() -> new IllegalArgumentException("找不到這筆餐廳，或你沒有權限操作"));
 
-        // 更新可編輯欄位（你需要的就補）
         r.setName(form.getName());
         r.setCounty(form.getCounty());
         r.setAddress(form.getAddress());
@@ -352,7 +356,6 @@ public class RestaurantService {
         r.setType(form.getType());
         r.setKeywords(form.getKeywords());
 
-        // 重新送審（清空舊審核結果）
         r.setStatus(ModerationStatus.PENDING);
         r.setSubmittedBy(merchantId);
         r.setSubmittedAt(OffsetDateTime.now());
@@ -360,15 +363,13 @@ public class RestaurantService {
         r.setReviewedAt(null);
         r.setRejectReason(null);
 
-        // 保底：若 createdBy 未設，補上
         if (r.getCreatedBy() == null && merchantId != null) {
             r.setCreatedBy(merchantId.intValue());
         }
-
         return restaurantRepository.save(r);
     }
 
-    // === 被退回後：不改內容直接重新送審 ===
+    // 被退回後：不改內容直接重新送審
     @Transactional
     public Restaurant resubmitWithoutChange(Long id, Long merchantId) {
         Restaurant r = restaurantRepository.findByIdAndSubmittedBy(id, merchantId)
@@ -384,48 +385,35 @@ public class RestaurantService {
         if (r.getCreatedBy() == null && merchantId != null) {
             r.setCreatedBy(merchantId.intValue());
         }
-
         return restaurantRepository.save(r);
     }
 
     // ============================================================
-    // ============ ★★★ 營業時間：查詢與維護 API ★★★ ============
+    // 營業時間
     // ============================================================
 
-    /**
-     * 判斷指定時間點是否「休息」：
-     * 1) 若該日有 SpecialHour -> 以特例為準
-     * 2) 否則看固定每週的 RestaurantHour
-     */
     @Transactional(readOnly = true)
     public boolean isClosedAt(Long restaurantId, LocalDateTime when) {
         LocalDate date = when.toLocalDate();
         LocalTime time = when.toLocalTime();
 
-        // 先看特例
         var specialOpt = specialHourRepository.findByRestaurantIdAndSpecificDate(restaurantId, date);
         if (specialOpt.isPresent()) {
             var s = specialOpt.get();
-            if (s.isClosedAllDay()) return true; // 整天公休
-            if (s.getOpenTime() == null || s.getCloseTime() == null) return true; // 無有效時段視為休息
+            if (s.isClosedAllDay()) return true;
+            if (s.getOpenTime() == null || s.getCloseTime() == null) return true;
             boolean within = within(time, s.getOpenTime(), s.getCloseTime());
             return !within;
         }
 
-        // 沒特例 -> 看固定班表
         DayOfWeek dow = when.getDayOfWeek();
         var todays = hourRepository.findByRestaurantIdAndDayOfWeekOrderByIdAsc(restaurantId, dow);
-        if (todays.isEmpty()) {
-            // 未設定 -> 視為休息
-            return true;
-        }
+        if (todays.isEmpty()) return true;
 
-        // 若其中任何一筆是整天公休 -> 視為休息（可依需求調整策略）
         for (var h : todays) {
             if (h.isClosedAllDay()) return true;
         }
 
-        // 只要命中任一有效時段就算營業中
         boolean open = todays.stream().anyMatch(h ->
                 h.getOpenTime() != null && h.getCloseTime() != null &&
                 within(time, h.getOpenTime(), h.getCloseTime())
@@ -439,9 +427,6 @@ public class RestaurantService {
                 restaurantId, from, to);
     }
 
-    /**
-     * 覆蓋整週固定班表（簡化作法：清掉舊資料、再存新資料）
-     */
     @Transactional
     public void replaceWeeklyHours(Long restaurantId, List<RestaurantHour> newHours) {
         hourRepository.deleteByRestaurantId(restaurantId);
@@ -453,9 +438,6 @@ public class RestaurantService {
         }
     }
 
-    /**
-     * 新增或更新「特例營業時間」
-     */
     @Transactional
     public void upsertSpecialHour(RestaurantSpecialHour spec) {
         var opt = specialHourRepository.findByRestaurantIdAndSpecificDate(
@@ -463,8 +445,8 @@ public class RestaurantService {
         if (opt.isPresent()) {
             var exist = opt.get();
             exist.setClosedAllDay(spec.isClosedAllDay());
-            exist.setOpenTime(spec.getOpenTime());
-            exist.setCloseTime(spec.getCloseTime());
+            exist.setOpenTime(spec.getOpenTime());   // 修正：用 spec
+            exist.setCloseTime(spec.getCloseTime()); // 修正：用 spec
             exist.setNote(spec.getNote());
             specialHourRepository.save(exist);
         } else {
@@ -473,21 +455,164 @@ public class RestaurantService {
     }
 
     // ============================================================
-    // ================== ★★★ 私有工具方法 ★★★ ==================
+    // Step 4/5：評論相關（分頁 / 新增 / 編輯 / 刪除 / 隱藏）
     // ============================================================
 
-    /**
-     * 產出週一→週日的時段表（固定順序），每一天可能有多段。
-     */
+    // 查詢單張照片（給 /photos/{id}）
+    public RestaurantPhoto findPhotoById(Long photoId) {
+        return photoRepository.findById(photoId).orElse(null);
+    }
+
+    // 簡易判斷圖片 Content-Type
+    public String guessImageContentType(byte[] data) {
+        if (data == null || data.length < 12) return "image/jpeg";
+        if ((data[0] & 0xFF) == 0xFF && (data[1] & 0xFF) == 0xD8 && (data[2] & 0xFF) == 0xFF) return "image/jpeg"; // JPEG
+        if ((data[0] & 0xFF) == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47) return "image/png";  // PNG
+        if (data[0] == 'G' && data[1] == 'I' && data[2] == 'F' && data[3] == '8' && (data[4] == '7' || data[4] == '9') && data[5] == 'a') return "image/gif"; // GIF
+        if (data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F' &&
+            data[8] == 'W' && data[9] == 'E' && data[10] == 'B' && data[11] == 'P') return "image/webp"; // WEBP
+        return "image/jpeg";
+    }
+
+    // 分頁取得評論（Repository 原生分頁）
+    public Page<ReviewDto> getReviewPage(Long restaurantId,
+                                         int page, int size,
+                                         String sortBy, String order,
+                                         boolean includeHidden) {
+        if (page < 0) page = 0;
+        if (size <= 0 || size > 100) size = 10;
+
+        String sortProp;
+        if ("rating".equalsIgnoreCase(sortBy))      sortProp = "rating";
+        else if ("id".equalsIgnoreCase(sortBy))     sortProp = "id";
+        else                                        sortProp = "createdTime";
+
+        Sort.Direction dir = "asc".equalsIgnoreCase(order) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pr = PageRequest.of(page, size, Sort.by(dir, sortProp));
+
+        Page<RestaurantReview> raw = includeHidden
+                ? reviewRepository.findByRestaurantId(restaurantId, pr)
+                : reviewRepository.findByRestaurantIdAndIsHiddenFalse(restaurantId, pr);
+
+        return raw.map(rv -> new ReviewDto(
+                rv.getId(),
+                rv.getMemberId() == null ? null : rv.getMemberId().longValue(),
+                getUploaderNickname(rv.getMemberId()),
+                rv.getRating(),
+                rv.getComment(),
+                rv.getCreatedTime(),
+                Boolean.TRUE.equals(rv.getIsHidden())
+        ));
+    }
+
+    // （保留）新增評論：memberId 為 Long 的版本
+    @Transactional
+    public ReviewDto createReview(Long restaurantId, Long memberId, int rating, String comment) {
+        if (memberId == null) throw new IllegalArgumentException("未登入或缺少會員資訊");
+        Integer mid = memberId.intValue();
+        return createReview(restaurantId, mid, rating, comment, false);
+    }
+
+    // 新增評論：支援 hidden 與 Integer memberId（前端表單友善）
+    @Transactional
+    public ReviewDto createReview(Long restaurantId, Integer memberId, int rating, String comment, Boolean hidden) {
+        if (restaurantId == null || memberId == null)
+            throw new IllegalArgumentException("restaurantId / memberId 不可為空");
+        if (rating < 1 || rating > 5)
+            throw new IllegalArgumentException("評分需介於 1~5 星");
+        if (comment == null || comment.isBlank())
+            throw new IllegalArgumentException("comment 不可為空");
+
+        // 防重複：用 (Long, Integer) 版本，符合 entity 欄位型別
+        boolean exists = reviewRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
+        if (exists) throw new IllegalStateException("你已對此餐廳發表過評論");
+
+        RestaurantReview rv = new RestaurantReview();
+        rv.setRestaurantId(restaurantId);
+        rv.setMemberId(memberId);
+        rv.setRating(rating);
+        rv.setComment(comment.trim());
+        rv.setCreatedTime(LocalDateTime.now());
+        rv.setIsHidden(Boolean.TRUE.equals(hidden));
+        reviewRepository.save(rv);
+
+        // 重算平均星等
+        restaurantRepository.findById(restaurantId).ifPresent(r -> {
+            setAverageRating(r);
+            restaurantRepository.save(r);
+        });
+
+        return new ReviewDto(
+                rv.getId(),
+                memberId.longValue(),
+                getUploaderNickname(rv.getMemberId()),
+                rv.getRating(),
+                rv.getComment(),
+                rv.getCreatedTime(),
+                Boolean.TRUE.equals(rv.getIsHidden())
+        );
+    }
+
+    // 編輯自己的評論（以 id 取出，再檢查 owner，避免 Repository 型別不一致問題）
+    @Transactional
+    public boolean updateReview(Long reviewId, Long memberId, Integer rating, String comment) {
+        if (reviewId == null || memberId == null) return false;
+        Optional<RestaurantReview> opt = reviewRepository.findById(reviewId);
+        if (opt.isEmpty()) return false;
+        RestaurantReview rv = opt.get();
+        if (rv.getMemberId() == null || rv.getMemberId().intValue() != memberId.intValue()) return false;
+
+        if (rating != null) {
+            if (rating < 1 || rating > 5) throw new IllegalArgumentException("評分需介於 1~5 星");
+            rv.setRating(rating);
+        }
+        if (comment != null) {
+            if (comment.isBlank()) throw new IllegalArgumentException("comment 不可為空");
+            rv.setComment(comment);
+        }
+        return true;
+    }
+
+    // 刪除自己的評論（同上邏輯）
+    @Transactional
+    public boolean deleteReviewByIdAndMemberId(Long reviewId, Long memberId) {
+        if (reviewId == null || memberId == null) return false;
+        Optional<RestaurantReview> opt = reviewRepository.findById(reviewId);
+        if (opt.isEmpty()) return false;
+        RestaurantReview rv = opt.get();
+        if (rv.getMemberId() == null || rv.getMemberId().intValue() != memberId.intValue()) return false;
+
+        reviewRepository.delete(rv);
+        return true;
+    }
+
+    // 管理員：設定隱藏（簡化版）
+    @Transactional
+    public void setReviewHidden(Long reviewId, boolean hidden) {
+        reviewRepository.findById(reviewId).ifPresent(r -> r.setIsHidden(hidden));
+    }
+
+    // ============================================================
+    // 私有工具
+    // ============================================================
+
+    // STEP1：照片轉 URL
+    private List<PhotoDto> buildPhotoDtos(Long restaurantId) {
+        return photoRepository.findTop5ByRestaurantIdOrderByIdAsc(restaurantId).stream()
+                .filter(p -> p.getImage() != null && p.getImage().length > 0)
+                .map(p -> new PhotoDto(p.getId(), "/api/restaurants/photos/" + p.getId()))
+                .collect(Collectors.toList());
+    }
+
+    // 產出週一→週日
     private LinkedHashMap<DayOfWeek, List<String>> buildWeeklyHours(Long restaurantId) {
         LinkedHashMap<DayOfWeek, List<String>> map = new LinkedHashMap<>();
-        DayOfWeek[] order = new DayOfWeek[]{
+        DayOfWeek[] order = {
                 DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
                 DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY
         };
         for (DayOfWeek d : order) {
             var hours = hourRepository.findByRestaurantIdAndDayOfWeekOrderByIdAsc(restaurantId, d);
-            // 過濾整天公休，將有效時段格式化
             List<String> ranges = hours.stream()
                     .filter(h -> !h.isClosedAllDay() && h.getOpenTime() != null && h.getCloseTime() != null)
                     .map(h -> formatRange(h.getOpenTime(), h.getCloseTime()))
@@ -497,17 +622,13 @@ public class RestaurantService {
         return map;
     }
 
-    /**
-     * 判斷 now 是否在 [open, close) 內；支援跨夜（open > close）。
-     */
+    // 判斷 [open, close)；支援跨夜
     private boolean within(LocalTime now, LocalTime open, LocalTime close) {
         if (open == null || close == null) return false;
-        if (open.equals(close)) return false; // 0 時段
+        if (open.equals(close)) return false;
         if (open.isBefore(close)) {
-            // 同日時段
             return !now.isBefore(open) && now.isBefore(close);
         } else {
-            // 跨夜：例如 18:00 ~ 02:00
             return !now.isBefore(open) || now.isBefore(close);
         }
     }
@@ -530,10 +651,9 @@ public class RestaurantService {
             default: return "";
         }
     }
- // 讓編輯頁可以預載現有的每週時段（原始 entity 列表）
+
     @Transactional(readOnly = true)
     public List<RestaurantHour> getWeeklyHourEntities(Long restaurantId) {
         return hourRepository.findByRestaurantIdOrderByDayOfWeekAsc(restaurantId);
     }
-
 }

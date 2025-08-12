@@ -1,21 +1,20 @@
 package com.example.foodmap.foodmap.web;
 
 import java.time.DayOfWeek;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.example.foodmap.foodmap.domain.RestaurantReview;
 import com.example.foodmap.foodmap.domain.RestaurantService;
+import com.example.foodmap.foodmap.dto.PhotoDto;
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
+import com.example.foodmap.foodmap.dto.ReviewDto;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -47,15 +46,15 @@ public class RestaurantPageController {
             else if (raw instanceof String) { try { loginMemberId = Long.parseLong((String) raw); } catch (Exception ignore) {} }
         }
 
-        // 2) 取 DTO
+        // 2) 取 DTO（已含：restaurant、photos(URL)、reviews(ReviewDto)、weeklyHours、openNow...）
         RestaurantDetailsDTO dto = restaurantService.getRestaurantDetails(id, loginMemberId);
+        if (dto == null || dto.getRestaurant() == null) {
+            model.addAttribute("message", "找不到餐廳資料");
+            return "error/404";
+        }
 
-        // 3) 評論時間格式化
-        List<RestaurantReview> reviews = dto.getReviews();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        List<String> reviewTimes = reviews.stream()
-                .map(r -> r.getCreatedTime() != null ? r.getCreatedTime().format(formatter) : "")
-                .collect(Collectors.toList());
+        // 3) 讀取評論
+        List<ReviewDto> reviews = dto.getReviews() != null ? dto.getReviews() : List.of();
 
         // 4) 是否為管理員（給模板使用）
         boolean isAdmin = false;
@@ -65,15 +64,20 @@ public class RestaurantPageController {
             isAdmin = s.contains("ADMIN") || s.contains("管理員");
         }
 
-        // 5) 將 weeklyHours 轉為模板用的「固定順序列」，
-        //    避免在 Thymeleaf 呼叫 #lists.*（你這版沒有這些方法）
+        // 5) 將 weeklyHours 轉為模板用固定順序列（週一→週日）
         List<DayRow> weeklyHoursRows = buildWeeklyRows(dto.getWeeklyHours());
 
         // 6) 丟資料給 View
         model.addAttribute("restaurant", dto.getRestaurant());
-        model.addAttribute("photos", dto.getPhotoBase64List());
+
+        // 新：照片 URL（模板：<img th:src="${p.url}">）
+        List<PhotoDto> photos = dto.getPhotos() != null ? dto.getPhotos() : List.of();
+        model.addAttribute("photos", photos);
+
+        // ✅ 刪除舊相容欄位：photoBase64List（Step 3 已移除）
+        // model.addAttribute("photoBase64List", dto.getPhotoBase64List());
+
         model.addAttribute("reviews", reviews);
-        model.addAttribute("reviewTimes", reviewTimes);
         model.addAttribute("favorite", dto.isFavorite());
         model.addAttribute("loginMemberId", loginMemberId);
         model.addAttribute("uploaderNickname", dto.getUploaderNickname());
@@ -120,7 +124,7 @@ public class RestaurantPageController {
         public String getRanges() { return ranges; }
     }
 
-    // 除錯端點
+    // 除錯端點（可留著）
     @GetMapping("/check-session")
     public String checkSession(HttpSession session) {
         Enumeration<String> attrs = session.getAttributeNames();

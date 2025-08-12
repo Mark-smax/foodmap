@@ -4,6 +4,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.foodmap.member.domain.enums.MemberRole;
 
@@ -30,6 +31,7 @@ public class RestaurantReviewPageController {
     /**
      * ✅ 管理員隱藏留言
      */
+    @ResponseBody
     @PostMapping("/hide")
     public String hideReview(@RequestParam Long reviewId,
                              @RequestParam Long restaurantId,
@@ -46,6 +48,22 @@ public class RestaurantReviewPageController {
         reviewService.setReviewHidden(reviewId, true); // 將評論設為隱藏
         return "redirect:/restaurant-detail?id=" + restaurantId;
     }
+//    @PostMapping("/hide")
+//    public String hideReview(@RequestParam Long reviewId,
+//    		@RequestParam Long restaurantId,
+//    		HttpSession session,
+//    		RedirectAttributes redirectAttributes) {
+//    	
+//    	MemberRole role = (MemberRole) session.getAttribute("loginMemberRoles");
+//    	if (role != MemberRole.ADMIN) {
+//    		
+//    		redirectAttributes.addFlashAttribute("error", "您沒有權限");
+//    		return "redirect:/restaurant-detail?id=" + restaurantId;
+//    	}
+//    	
+//    	reviewService.setReviewHidden(reviewId, true); // 將評論設為隱藏
+//    	return "redirect:/restaurant-detail?id=" + restaurantId;
+//    }
     
     @PostMapping("/unhide")
     public String unhideReview(@RequestParam Long reviewId,
