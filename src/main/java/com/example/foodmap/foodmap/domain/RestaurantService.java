@@ -28,6 +28,7 @@ import com.example.foodmap.foodmap.dto.ReviewDto;          // STEP2
 import com.example.foodmap.member.domain.Member;
 import com.example.foodmap.member.domain.MemberRepository;
 
+
 @Service
 public class RestaurantService {
 
@@ -200,17 +201,25 @@ public class RestaurantService {
     }
 
     @Transactional
-    public void toggleFavorite(Long restaurantId, Long memberId) {
-        if (memberId == null) return;
-        boolean exists = favoriteRepository.existsByRestaurantIdAndMemberId(restaurantId, memberId);
-        if (exists) {
-            favoriteRepository.deleteByRestaurantIdAndMemberId(restaurantId, memberId);
-        } else {
-            RestaurantFavorite fav = new RestaurantFavorite();
-            fav.setRestaurantId(restaurantId);
-            fav.setMemberId(memberId);
-            favoriteRepository.save(fav);
+    public boolean toggleFavorite(Long restaurantId, Long memberId) {
+        if (restaurantId == null || memberId == null) {
+            throw new IllegalArgumentException("restaurantId / memberId must not be null");
         }
+
+        return favoriteRepository.findByRestaurantIdAndMemberId(restaurantId, memberId)
+            .map(existing -> {
+                // 已收藏 → 取消收藏
+                favoriteRepository.delete(existing);
+                return false; // 現在狀態為「未收藏」
+            })
+            .orElseGet(() -> {
+                // 尚未收藏 → 新增收藏
+                RestaurantFavorite fav = new RestaurantFavorite();
+                fav.setRestaurantId(restaurantId);
+                fav.setMemberId(memberId);
+                favoriteRepository.save(fav);
+                return true; // 現在狀態為「已收藏」
+            });
     }
 
     public Restaurant getRestaurantById(Long id) {
@@ -656,4 +665,7 @@ public class RestaurantService {
     public List<RestaurantHour> getWeeklyHourEntities(Long restaurantId) {
         return hourRepository.findByRestaurantIdOrderByDayOfWeekAsc(restaurantId);
     }
+    
+    
+
 }

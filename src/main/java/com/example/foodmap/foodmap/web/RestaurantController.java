@@ -114,7 +114,6 @@ public class RestaurantController {
             @Valid @RequestBody ReviewCreateRequest req
     ) {
         try {
-            // 不使用 req.getHidden()，一律預設 false（Service 已預設為 false）
             ReviewDto dto = service.createReview(
                     restaurantId,
                     req.getMemberId() == null ? null : req.getMemberId().longValue(),
@@ -125,7 +124,6 @@ public class RestaurantController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", ex.getMessage()));
         } catch (IllegalStateException ex) {
-            // 例如：重複評論
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", "CONFLICT", "message", ex.getMessage()));
         }
@@ -218,5 +216,15 @@ public class RestaurantController {
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000, immutable")
                 .header(HttpHeaders.CONTENT_TYPE, ct)
                 .body(p.getImage());
+    }
+
+    // ───────────────────────────────── 收藏切換（回傳目前是否已收藏）
+    @PostMapping("/{id}/favorite/toggle")
+    public ResponseEntity<Map<String, Object>> toggleFavorite(
+            @PathVariable("id") Long restaurantId,
+            @RequestParam("memberId") Long memberId) {
+
+        boolean favorite = service.toggleFavorite(restaurantId, memberId);
+        return ResponseEntity.ok(Map.of("favorite", favorite));
     }
 }
