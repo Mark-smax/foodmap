@@ -8,6 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
@@ -34,7 +36,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     Page<Restaurant> findByKeywordsContainingIgnoreCase(String keyword, Pageable pageable);
 
     Page<Restaurant> findByNameContainingIgnoreCase(String name, Pageable pageable);
-
+    
     @Query("SELECT r FROM Restaurant r")
     List<Restaurant> findAllWithReviews();
 
@@ -43,7 +45,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
     // 商家自己的投稿列表
     Page<Restaurant> findBySubmittedBy(Long submittedBy, Pageable pageable);
-
+    
     // 商家本人才能編輯/重新送審用
     Optional<Restaurant> findByIdAndSubmittedBy(Long id, Long submittedBy);
 
@@ -60,4 +62,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     Page<Restaurant> searchApprovedByKeyword(@Param("keyword") String keyword,
                                              @Param("status") ModerationStatus status,
                                              Pageable pageable);
+    
+    
+
 }

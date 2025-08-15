@@ -28,7 +28,6 @@ import com.example.foodmap.foodmap.dto.ReviewDto;          // STEP2
 import com.example.foodmap.member.domain.Member;
 import com.example.foodmap.member.domain.MemberRepository;
 
-
 @Service
 public class RestaurantService {
 
@@ -665,7 +664,38 @@ public class RestaurantService {
     public List<RestaurantHour> getWeeklyHourEntities(Long restaurantId) {
         return hourRepository.findByRestaurantIdOrderByDayOfWeekAsc(restaurantId);
     }
-    
-    
 
+    // === 對外公開：給 /api/merchant/restaurants/** 用 ===
+    public Page<RestaurantDto> convertToDtoPagePublic(Page<Restaurant> page, Long memberId) {
+        // 直接重用你原本的轉換與排序邏輯
+        return convertToDtoPage(page, memberId);
+    }
+
+    public RestaurantDto toDtoPublic(Restaurant r, Long memberId) {
+        // 做法與 convertToDtoPage(...) 內部一致，確保前後端顯示相同
+        setAverageRating(r);
+        String thumbnail = getRandomThumbnail(r.getId());
+
+        boolean isFav = (memberId != null) &&
+                favoriteRepository.existsByRestaurantIdAndMemberId(r.getId(), memberId);
+
+        String uploaderName = getUploaderNickname(r.getCreatedBy());
+        String status       = (r.getStatus() == null ? null : r.getStatus().name());
+        String rejectReason = r.getRejectReason();
+
+        return new RestaurantDto(
+                r.getId(),
+                r.getName(),
+                r.getAddress(),
+                r.getPhone(),
+                r.getCounty(),
+                r.getType(),
+                r.getAvgRating(),
+                thumbnail,
+                isFav,
+                uploaderName,
+                status,
+                rejectReason
+        );
+    }
 }

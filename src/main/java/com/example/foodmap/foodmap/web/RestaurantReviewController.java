@@ -19,7 +19,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/reviews")
-@CrossOrigin(origins = "*") // 前端可能會跨域呼叫
+
 public class RestaurantReviewController {
 
     @Autowired
