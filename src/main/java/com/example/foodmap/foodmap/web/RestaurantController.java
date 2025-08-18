@@ -75,7 +75,6 @@ public class RestaurantController {
     public ResponseEntity<?> getRestaurantDetails(
             @PathVariable("id") Long restaurantId,
             @RequestParam(value = "memberId", required = false) String memberIdStr) {
-
         Long memberId = null;
         if (memberIdStr != null && !memberIdStr.isBlank()) {
             try { memberId = Long.parseLong(memberIdStr); } catch (NumberFormatException ignore) {}
@@ -88,11 +87,16 @@ public class RestaurantController {
                         .body(Map.of("error","NOT_FOUND","id", restaurantId));
             }
             return ResponseEntity.ok(dto);
+        } catch (IllegalStateException e) {
+            // 這邊對應上面拋出的 "FORBIDDEN"
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error","FORBIDDEN","message","No permission to view this restaurant"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error","INTERNAL_ERROR","message", e.getMessage()));
         }
     }
+
 
     // ───────────────────────────────── 分頁取得評論
     @GetMapping("/{id}/reviews")

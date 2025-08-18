@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.foodmap.foodmap.domain.ModerationStatus;
+import com.example.foodmap.foodmap.domain.NotificationService;
 import com.example.foodmap.foodmap.domain.Restaurant;
 import com.example.foodmap.foodmap.domain.RestaurantRepository;
 import com.example.foodmap.foodmap.domain.RestaurantService;
@@ -33,15 +34,18 @@ public class MerchantRestaurantApiController {
     private final RestaurantService restaurantService;
     private final RestaurantPhotoRepository photoRepository;
     private final RestaurantHourRepository hourRepository;
+    private final NotificationService notificationService; // ✅ 新增
 
     public MerchantRestaurantApiController(RestaurantRepository restaurantRepository,
                                            RestaurantService restaurantService,
                                            RestaurantPhotoRepository photoRepository,
-                                           RestaurantHourRepository hourRepository) {
+                                           RestaurantHourRepository hourRepository,
+                                           NotificationService notificationService) { // ✅ 新增
         this.restaurantRepository = restaurantRepository;
         this.restaurantService = restaurantService;
         this.photoRepository = photoRepository;
         this.hourRepository = hourRepository;
+        this.notificationService = notificationService; // ✅ 新增
     }
 
     // ---------------- 共用：擁有者檢查 ----------------
@@ -60,7 +64,6 @@ public class MerchantRestaurantApiController {
             @PageableDefault(size = 12) Pageable pageable) {
 
         Page<Restaurant> page = restaurantRepository.findBySubmittedBy(memberId, pageable);
-        // 你在 RestaurantService 已新增 toDtoPublic / convertToDtoPagePublic
         return restaurantService.convertToDtoPagePublic(page, memberId);
     }
 
@@ -94,8 +97,18 @@ public class MerchantRestaurantApiController {
         r.setStatus(ModerationStatus.PENDING);
 
         Restaurant saved = restaurantService.createRestaurant(r);
+
+        // ✅ 新增後通知管理員，讓管理員可先看詳情頁再審核
+        try {
+            notificationService.notifyAdmins(
+                "新上架申請",
+                "商家提交了餐廳：「" + saved.getName() + "」等待審核",
+                "/restaurants/" + saved.getId()
+            );
+        } catch (Exception ignore) {}
+
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("ok", true, "id", saved.getId()));
+                .body(Map.of("ok", true, "id", saved.getId(), "status", saved.getStatus().name()));
     }
 
     // ================== 修改 ==================
@@ -120,6 +133,41 @@ public class MerchantRestaurantApiController {
 
         restaurantService.updateRestaurant(id, patch);
         return ResponseEntity.ok(Map.of("ok", true, "id", id));
+    }
+
+    // ✅ ✅ 重新送審（僅本人；REJECTED → PENDING）
+    @PostMapping("/{id}/resubmit")
+    public ResponseEntity<?> resubmit(@PathVariable Long id,
+                                      @RequestParam("memberId") Long memberId) {
+        var opt = restaurantRepository.findByIdAndSubmittedBy(id, memberId);
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("ok", false, "error", "NOT_FOUND_OR_NOT_OWNER", "id", id));
+        }
+        Restaurant r = opt.get();
+
+        if (r.getStatus() == ModerationStatus.APPROVED) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("ok", false, "error", "ALREADY_APPROVED", "id", id));
+        }
+
+        // 改回待審，清除審核資訊與退回原因
+        r.setStatus(ModerationStatus.PENDING);
+        try { r.setReviewedBy(null); } catch (Exception ignore) {}
+        try { r.setReviewedAt(null); } catch (Exception ignore) {}
+        try { r.setRejectReason(null); } catch (Exception ignore) {}
+        restaurantRepository.save(r);
+
+        // 通知管理員（可點詳情頁預覽）
+        try {
+            notificationService.notifyAdmins(
+                "重新送審：" + r.getName(),
+                "商家重新送審餐廳，請審核。",
+                "/restaurants/" + r.getId()
+            );
+        } catch (Exception ignore) {}
+
+        return ResponseEntity.ok(Map.of("ok", true, "id", r.getId(), "status", r.getStatus().name()));
     }
 
     // 前端 upsert payload：支援單一 type 或多選 types
