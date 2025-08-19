@@ -1,29 +1,31 @@
+// src/main/java/com/example/foodmap/foodmap/web/RestaurantController.java
 package com.example.foodmap.foodmap.web;
+
+import java.util.Map;
+
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.foodmap.foodmap.domain.RestaurantPhoto;
 import com.example.foodmap.foodmap.domain.RestaurantService;
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.foodmap.dto.RestaurantDto;
-import com.example.foodmap.foodmap.dto.ReviewDto;
 import com.example.foodmap.foodmap.dto.ReviewCreateRequest;
+import com.example.foodmap.foodmap.dto.ReviewDto;
 import com.example.foodmap.foodmap.dto.ReviewUpdateRequest;
-import com.example.foodmap.foodmap.domain.RestaurantPhoto;
-
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-
-import java.util.Map;
+import com.example.foodmap.member.domain.enums.MemberRole;
 
 @RestController
 @RequestMapping("/api/restaurants")
-
 public class RestaurantController {
 
     private final RestaurantService service;
@@ -32,7 +34,7 @@ public class RestaurantController {
         this.service = service;
     }
 
-    // ───────────────────────────────── search 列表（保留你的原本邏輯）
+    /* ============================= 搜尋列表 ============================= */
     @GetMapping
     public Page<RestaurantDto> search(
             @RequestParam(required = false) String county,
@@ -53,31 +55,28 @@ public class RestaurantController {
             if (memberId != null && !memberId.isBlank()) {
                 memberIdLong = Long.parseLong(memberId);
             }
-        } catch (NumberFormatException e) {
-            memberIdLong = null;
-        }
+        } catch (NumberFormatException ignored) {}
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return service.searchByKeyword(keyword.trim(), pageRequest, memberIdLong);
         }
-
-        if (county != null && !county.trim().isEmpty() &&
-            type != null && !type.trim().isEmpty() &&
-            (minRating == null || minRating == 0)) {
+        if (county != null && !county.trim().isEmpty()
+                && type != null && !type.trim().isEmpty()
+                && (minRating == null || minRating == 0)) {
             return service.searchByCountyAndType(county.trim(), type.trim(), pageRequest, memberIdLong);
         }
-
         return service.searchRestaurants(county, minRating, type, pageRequest, memberIdLong);
     }
 
-    // ───────────────────────────────── details（包成 ResponseEntity，錯誤時回 JSON）
+    /* ============================= 詳細資訊 ============================= */
     @GetMapping("/{id}/details")
     public ResponseEntity<?> getRestaurantDetails(
             @PathVariable("id") Long restaurantId,
             @RequestParam(value = "memberId", required = false) String memberIdStr) {
+
         Long memberId = null;
         if (memberIdStr != null && !memberIdStr.isBlank()) {
-            try { memberId = Long.parseLong(memberIdStr); } catch (NumberFormatException ignore) {}
+            try { memberId = Long.parseLong(memberIdStr); } catch (NumberFormatException ignored) {}
         }
 
         try {
@@ -88,7 +87,6 @@ public class RestaurantController {
             }
             return ResponseEntity.ok(dto);
         } catch (IllegalStateException e) {
-            // 這邊對應上面拋出的 "FORBIDDEN"
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error","FORBIDDEN","message","No permission to view this restaurant"));
         } catch (Exception e) {
@@ -97,118 +95,7 @@ public class RestaurantController {
         }
     }
 
-
-    // ───────────────────────────────── 分頁取得評論
-    @GetMapping("/{id}/reviews")
-    public Page<ReviewDto> getReviews(
-            @PathVariable("id") Long restaurantId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdTime") String sortBy,
-            @RequestParam(defaultValue = "desc") String order,
-            @RequestParam(defaultValue = "false") boolean includeHidden
-    ) {
-        return service.getReviewPage(restaurantId, page, size, sortBy, order, includeHidden);
-    }
-
-    // ───────────────────────────────── 新增評論（JSON）
-    @PostMapping(value = "/{id}/reviews", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> createReviewJson(
-            @PathVariable("id") Long restaurantId,
-            @Valid @RequestBody ReviewCreateRequest req
-    ) {
-        try {
-            ReviewDto dto = service.createReview(
-                    restaurantId,
-                    req.getMemberId() == null ? null : req.getMemberId().longValue(),
-                    req.getRating(),
-                    req.getComment()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", ex.getMessage()));
-        } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "CONFLICT", "message", ex.getMessage()));
-        }
-    }
-
-    // ───────────────────────────────── 新增評論（Form）
-    @PostMapping(value = "/{id}/reviews", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<?> createReviewForm(
-            @PathVariable("id") Long restaurantId,
-            @Valid ReviewCreateRequest req
-    ) {
-        try {
-            ReviewDto dto = service.createReview(
-                    restaurantId,
-                    req.getMemberId() == null ? null : req.getMemberId().longValue(),
-                    req.getRating(),
-                    req.getComment()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", ex.getMessage()));
-        } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "CONFLICT", "message", ex.getMessage()));
-        }
-    }
-
-    // ───────────────────────────────── 編輯評論（JSON / Form 都支援）
-    @PutMapping("/{id}/reviews/{reviewId}")
-    public ResponseEntity<?> updateReview(
-            @PathVariable("id") Long restaurantId,
-            @PathVariable Long reviewId,
-            @RequestParam("memberId") Long memberId,
-            @Valid @RequestBody(required = false) ReviewUpdateRequest body, // JSON
-            @Valid ReviewUpdateRequest form                                  // FORM
-    ) {
-        // 用一下 restaurantId（避免 IDE 提醒未使用；也順便做存在性檢查）
-        service.getRestaurantById(restaurantId);
-
-        ReviewUpdateRequest req = (body != null ? body : form);
-        if (req == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", "缺少內容"));
-        }
-        boolean ok = service.updateReview(reviewId, memberId, req.getRating(), req.getComment());
-        return ok ? ResponseEntity.ok(Map.of("ok", true))
-                  : ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                  .body(Map.of("error", "FORBIDDEN", "message", "只能編輯自己的評論"));
-    }
-
-    // ───────────────────────────────── 刪除自己的評論
-    @DeleteMapping("/{id}/reviews/{reviewId}")
-    public ResponseEntity<?> deleteReview(
-            @PathVariable("id") Long restaurantId,
-            @PathVariable Long reviewId,
-            @RequestParam("memberId") Long memberId
-    ) {
-        // 用一下 restaurantId（避免 IDE 提醒未使用；也順便做存在性檢查）
-        service.getRestaurantById(restaurantId);
-
-        boolean ok = service.deleteReviewByIdAndMemberId(reviewId, memberId);
-        return ok ? ResponseEntity.ok(Map.of("ok", true))
-                  : ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                  .body(Map.of("error", "FORBIDDEN", "message", "只能刪除自己的評論"));
-    }
-
-    // ───────────────────────────────── （管理員）隱藏/取消隱藏評論
-    @PatchMapping("/{id}/reviews/{reviewId}/hidden")
-    public ResponseEntity<?> setHidden(
-            @PathVariable("id") Long restaurantId,
-            @PathVariable Long reviewId,
-            @RequestParam("hidden") boolean hidden
-    ) {
-        // 用一下 restaurantId（避免 IDE 提醒未使用；也順便做存在性檢查）
-        service.getRestaurantById(restaurantId);
-
-        // 這裡用舊的管理端方法（不做作者檢查）；若要做權限，可改用 setReviewHidden(reviewId, actorId, hidden, isAdmin)
-        service.setReviewHidden(reviewId, hidden);
-        return ResponseEntity.ok(Map.of("ok", true));
-    }
-
-    // ───────────────────────────────── 照片串流端點（依位元判斷 Content-Type）
+    /* ============================= 照片串流 ============================= */
     @GetMapping("/photos/{photoId}")
     public ResponseEntity<byte[]> photo(@PathVariable Long photoId) {
         RestaurantPhoto p = service.findPhotoById(photoId);
@@ -222,7 +109,7 @@ public class RestaurantController {
                 .body(p.getImage());
     }
 
-    // ───────────────────────────────── 收藏切換（回傳目前是否已收藏）
+    /* ============================= 收藏切換 ============================= */
     @PostMapping("/{id}/favorite/toggle")
     public ResponseEntity<Map<String, Object>> toggleFavorite(
             @PathVariable("id") Long restaurantId,
@@ -230,5 +117,174 @@ public class RestaurantController {
 
         boolean favorite = service.toggleFavorite(restaurantId, memberId);
         return ResponseEntity.ok(Map.of("favorite", favorite));
+    }
+
+    /* ============================= 評論：查詢（預設不含隱藏） ============================= */
+    @GetMapping("/{id}/reviews")
+    public Page<ReviewDto> getReviews(
+            @PathVariable("id") Long restaurantId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdTime") String sortBy,
+            @RequestParam(defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "false") boolean includeHidden,
+            HttpSession session
+    ) {
+        boolean canSeeHidden = includeHidden && isAdmin(session);
+        return service.getReviewPage(restaurantId, page, size, sortBy, order, canSeeHidden);
+    }
+
+    /* ============================= 評論：新增（JSON） ============================= */
+    @PostMapping(value = "/{id}/reviews", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createReviewJson(
+            @PathVariable("id") Long restaurantId,
+            @Valid @RequestBody ReviewCreateRequest req
+    ) {
+        try {
+            if (req.getMemberId() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", "缺少 memberId"));
+            }
+            ReviewDto dto = service.createReview(
+                    restaurantId,
+                    req.getMemberId().longValue(),
+                    req.getRating(),
+                    req.getComment()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", ex.getMessage()));
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "CONFLICT", "message", ex.getMessage()));
+        }
+    }
+
+    /* ============================= 評論：新增（Form） ============================= */
+    @PostMapping(value = "/{id}/reviews", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> createReviewForm(
+            @PathVariable("id") Long restaurantId,
+            @Valid ReviewCreateRequest req
+    ) {
+        try {
+            if (req.getMemberId() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", "缺少 memberId"));
+            }
+            ReviewDto dto = service.createReview(
+                    restaurantId,
+                    req.getMemberId().longValue(),
+                    req.getRating(),
+                    req.getComment()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", ex.getMessage()));
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "CONFLICT", "message", ex.getMessage()));
+        }
+    }
+
+    /* ============================= 評論：編輯（本人）— JSON 版本 ============================= */
+    @PutMapping(value = "/{id}/reviews/{reviewId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateReviewJson(
+            @PathVariable("id") Long restaurantId,
+            @PathVariable Long reviewId,
+            @RequestParam(value = "memberId", required = false) Long memberId,
+            @Valid @RequestBody ReviewUpdateRequest req,
+            HttpSession session
+    ) {
+        service.getRestaurantById(restaurantId);
+
+        Long actorId = memberId != null ? memberId : currentMemberId(session);
+        if (actorId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "UNAUTHORIZED", "message", "未登入"));
+        }
+
+        boolean ok = service.updateReview(reviewId, actorId, req.getRating(), req.getComment());
+        return ok ? ResponseEntity.ok(Map.of("ok", true))
+                  : ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                  .body(Map.of("error", "FORBIDDEN", "message", "只能編輯自己的評論"));
+    }
+
+    /* ============================= 評論：編輯（本人）— Form 版本 ============================= */
+    @PutMapping(value = "/{id}/reviews/{reviewId}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> updateReviewForm(
+            @PathVariable("id") Long restaurantId,
+            @PathVariable Long reviewId,
+            @RequestParam(value = "memberId", required = false) Long memberId,
+            @Valid ReviewUpdateRequest req,
+            HttpSession session
+    ) {
+        service.getRestaurantById(restaurantId);
+
+        Long actorId = memberId != null ? memberId : currentMemberId(session);
+        if (actorId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "UNAUTHORIZED", "message", "未登入"));
+        }
+
+        boolean ok = service.updateReview(reviewId, actorId, req.getRating(), req.getComment());
+        return ok ? ResponseEntity.ok(Map.of("ok", true))
+                  : ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                  .body(Map.of("error", "FORBIDDEN", "message", "只能編輯自己的評論"));
+    }
+
+    /* ============================= 評論：刪除（本人） ============================= */
+    @DeleteMapping("/{id}/reviews/{reviewId}")
+    public ResponseEntity<?> deleteReview(
+            @PathVariable("id") Long restaurantId,
+            @PathVariable Long reviewId,
+            @RequestParam(value = "memberId", required = false) Long memberId,
+            HttpSession session
+    ) {
+        service.getRestaurantById(restaurantId);
+
+        Long actorId = memberId != null ? memberId : currentMemberId(session);
+        if (actorId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "UNAUTHORIZED", "message", "未登入"));
+        }
+
+        boolean ok = service.deleteReviewByIdAndMemberId(reviewId, actorId);
+        return ok ? ResponseEntity.ok(Map.of("ok", true))
+                  : ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                  .body(Map.of("error", "FORBIDDEN", "message", "只能刪除自己的評論"));
+    }
+
+    /* ============================= 評論：隱藏/取消隱藏（只限管理員） ============================= */
+    @PatchMapping("/{id}/reviews/{reviewId}/hidden")
+    public ResponseEntity<?> setHidden(
+            @PathVariable("id") Long restaurantId,
+            @PathVariable Long reviewId,
+            @RequestParam("hidden") boolean hidden,
+            HttpSession session
+    ) {
+        service.getRestaurantById(restaurantId);
+
+        if (!isAdmin(session)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "FORBIDDEN", "message", "只有管理員可以隱藏/取消隱藏評論"));
+        }
+        service.setReviewHidden(reviewId, hidden);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /* ============================= Helpers ============================= */
+    private Long currentMemberId(HttpSession session) {
+        Object obj = session == null ? null : session.getAttribute("loginMemberId");
+        if (obj == null) return null;
+        if (obj instanceof Long l) return l;
+        if (obj instanceof Integer i) return i.longValue();
+        try { return Long.valueOf(obj.toString()); } catch (Exception e) { return null; }
+    }
+
+    private boolean isAdmin(HttpSession session) {
+        Object rolesObj = session == null ? null : session.getAttribute("loginMemberRoles");
+        if (rolesObj instanceof MemberRole role) {
+            return role == MemberRole.ADMIN;
+        }
+        String roles = rolesObj == null ? "" : rolesObj.toString();
+        return roles.contains("ADMIN") || roles.contains("管理員");
     }
 }

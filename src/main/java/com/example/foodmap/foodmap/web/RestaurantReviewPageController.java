@@ -1,20 +1,22 @@
 package com.example.foodmap.foodmap.web;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import com.example.foodmap.member.domain.enums.MemberRole;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.foodmap.foodmap.domain.RestaurantReviewService;
 
 import jakarta.servlet.http.HttpSession;
+import java.util.Map;
 
-@Controller
-@RequestMapping("/review")
+/**
+ * Legacy MVC controller for old /review/** routes.
+ * 已停用，避免與新的 /api/restaurants/{id}/reviews… 衝突。
+ * 若仍需舊頁面，改回 @RequestMapping("/review") 並啟用下方註解的實作。
+ */
+@RestController
+@RequestMapping("/legacy/review")
+@Deprecated
 public class RestaurantReviewPageController {
 
     private final RestaurantReviewService reviewService;
@@ -23,111 +25,101 @@ public class RestaurantReviewPageController {
         this.reviewService = reviewService;
     }
 
-    private Long getLoginMemberId(HttpSession session) {
-        Integer loginMemberId = (Integer) session.getAttribute("loginMemberId");
-        return (loginMemberId != null) ? loginMemberId.longValue() : null;
+    // 統一回應：告知端點已下線，請改用新的 REST API
+    private ResponseEntity<Map<String, Object>> gone() {
+        return ResponseEntity.status(HttpStatus.GONE).body(Map.of(
+                "error", "LEGACY_ENDPOINT_DISABLED",
+                "message", "This legacy endpoint is disabled. Use /api/restaurants/{id}/reviews…",
+                "docs", "/api/restaurants/{id}/reviews (GET/POST/PUT/DELETE/PATCH)"
+        ));
     }
 
-    /**
-     * ✅ 管理員隱藏留言
-     */
-    @ResponseBody
     @PostMapping("/hide")
-    public String hideReview(@RequestParam Long reviewId,
-                             @RequestParam Long restaurantId,
-                             HttpSession session,
-                             RedirectAttributes redirectAttributes) {
-
-    	MemberRole role = (MemberRole) session.getAttribute("loginMemberRoles");
-    	if (role != MemberRole.ADMIN) {
-
-            redirectAttributes.addFlashAttribute("error", "您沒有權限");
-            return "redirect:/restaurant-detail?id=" + restaurantId;
-        }
-
-        reviewService.setReviewHidden(reviewId, true); // 將評論設為隱藏
-        return "redirect:/restaurant-detail?id=" + restaurantId;
+    public ResponseEntity<Map<String, Object>> hideReview(
+            @RequestParam Long reviewId,
+            @RequestParam Long restaurantId,
+            HttpSession session) {
+        return gone();
     }
-//    @PostMapping("/hide")
-//    public String hideReview(@RequestParam Long reviewId,
-//    		@RequestParam Long restaurantId,
-//    		HttpSession session,
-//    		RedirectAttributes redirectAttributes) {
-//    	
-//    	MemberRole role = (MemberRole) session.getAttribute("loginMemberRoles");
-//    	if (role != MemberRole.ADMIN) {
-//    		
-//    		redirectAttributes.addFlashAttribute("error", "您沒有權限");
-//    		return "redirect:/restaurant-detail?id=" + restaurantId;
-//    	}
-//    	
-//    	reviewService.setReviewHidden(reviewId, true); // 將評論設為隱藏
-//    	return "redirect:/restaurant-detail?id=" + restaurantId;
-//    }
-    
+
     @PostMapping("/unhide")
-    public String unhideReview(@RequestParam Long reviewId,
-                               @RequestParam Long restaurantId,
-                               HttpSession session,
-                               RedirectAttributes redirectAttributes) {
-
-        MemberRole role = (MemberRole) session.getAttribute("loginMemberRoles");
-        if (role != MemberRole.ADMIN) {
-            redirectAttributes.addFlashAttribute("error", "您沒有權限");
-            return "redirect:/restaurant-detail?id=" + restaurantId;
-        }
-
-        reviewService.setReviewHidden(reviewId, false); // ✅ 設定為未隱藏
-        return "redirect:/restaurant-detail?id=" + restaurantId;
+    public ResponseEntity<Map<String, Object>> unhideReview(
+            @RequestParam Long reviewId,
+            @RequestParam Long restaurantId,
+            HttpSession session) {
+        return gone();
     }
 
-    /**
-     * 🗑️ 刪除評論（只能本人）
-     */
     @PostMapping("/delete")
-    public String deleteReview(@RequestParam Long reviewId,
-                               @RequestParam Long restaurantId,
-                               RedirectAttributes redirectAttributes,
-                               HttpSession session) {
-        System.out.println("📣 deleteReview 被呼叫了 reviewId = " + reviewId);
-
-        Long memberId = getLoginMemberId(session);
-        if (memberId == null) {
-            redirectAttributes.addFlashAttribute("error", "請先登入！");
-            return "redirect:/restaurant-detail?id=" + restaurantId;
-        }
-
-        boolean success = reviewService.deleteReviewByIdAndMemberId(reviewId, memberId);
-        if (!success) {
-            redirectAttributes.addFlashAttribute("error", "刪除失敗，請檢查權限！");
-        }
-
-        return "redirect:/restaurant-detail?id=" + restaurantId;
+    public ResponseEntity<Map<String, Object>> deleteReview(
+            @RequestParam Long reviewId,
+            @RequestParam Long restaurantId,
+            HttpSession session) {
+        return gone();
     }
 
-    /**
-     * ✏️ 編輯評論（只能本人）
-     */
     @PostMapping("/edit")
-    public String editReview(@RequestParam Long reviewId,
-                             @RequestParam int rating,
-                             @RequestParam String comment,
-                             @RequestParam Long restaurantId,
-                             RedirectAttributes redirectAttributes,
-                             HttpSession session) {
-        System.out.println("📣 editReview 被呼叫了 reviewId = " + reviewId + ", rating = " + rating + ", comment = " + comment);
-
-        Long memberId = getLoginMemberId(session);
-        if (memberId == null) {
-            redirectAttributes.addFlashAttribute("error", "請先登入！");
-            return "redirect:/restaurant-detail?id=" + restaurantId;
-        }
-
-        boolean updated = reviewService.updateReview(reviewId, memberId, rating, comment);
-        if (!updated) {
-            redirectAttributes.addFlashAttribute("error", "更新失敗，請確認權限或資料！");
-        }
-
-        return "redirect:/restaurant-detail?id=" + restaurantId;
+    public ResponseEntity<Map<String, Object>> editReview(
+            @RequestParam Long reviewId,
+            @RequestParam int rating,
+            @RequestParam String comment,
+            @RequestParam Long restaurantId,
+            HttpSession session) {
+        return gone();
     }
+
+    /* ------------------------------------------------------------
+     * 若你「真的需要」繼續支援舊頁面：
+     * 1) 把類別上的 @RequestMapping 改回 "/review"
+     * 2) 把上面四個方法改為回傳 redirect:String 或 ResponseEntity
+     * 3) 下面示範用法可參考（保留於註解，不參與編譯）
+     * ------------------------------------------------------------
+     *
+     * private Long loginId(HttpSession s) {
+     *     Object o = s.getAttribute("loginMemberId");
+     *     if (o == null) return null;
+     *     if (o instanceof Integer i) return i.longValue();
+     *     if (o instanceof Long l) return l;
+     *     return Long.valueOf(o.toString());
+     * }
+     *
+     * private boolean isAdmin(HttpSession s) {
+     *     Object roles = s.getAttribute("loginMemberRoles");
+     *     String r = (roles == null ? "" : roles.toString());
+     *     return r.contains("ADMIN") || r.contains("管理員");
+     * }
+     *
+     * @PostMapping("/hide")
+     * public String legacyHide(@RequestParam Long reviewId, @RequestParam Long restaurantId, HttpSession s) {
+     *     if (!isAdmin(s)) return "redirect:/restaurant-detail?id=" + restaurantId + "&err=forbidden";
+     *     reviewService.setReviewHidden(reviewId, true);
+     *     return "redirect:/restaurant-detail?id=" + restaurantId;
+     * }
+     *
+     * @PostMapping("/unhide")
+     * public String legacyUnhide(@RequestParam Long reviewId, @RequestParam Long restaurantId, HttpSession s) {
+     *     if (!isAdmin(s)) return "redirect:/restaurant-detail?id=" + restaurantId + "&err=forbidden";
+     *     reviewService.setReviewHidden(reviewId, false);
+     *     return "redirect:/restaurant-detail?id=" + restaurantId;
+     * }
+     *
+     * @PostMapping("/delete")
+     * public String legacyDelete(@RequestParam Long reviewId, @RequestParam Long restaurantId, HttpSession s) {
+     *     Long me = loginId(s);
+     *     if (me == null) return "redirect:/restaurant-detail?id=" + restaurantId + "&err=login";
+     *     if (!reviewService.deleteReviewByIdAndMemberId(reviewId, me))
+     *         return "redirect:/restaurant-detail?id=" + restaurantId + "&err=forbidden";
+     *     return "redirect:/restaurant-detail?id=" + restaurantId;
+     * }
+     *
+     * @PostMapping("/edit")
+     * public String legacyEdit(@RequestParam Long reviewId, @RequestParam int rating, @RequestParam String comment,
+     *                          @RequestParam Long restaurantId, HttpSession s) {
+     *     Long me = loginId(s);
+     *     if (me == null) return "redirect:/restaurant-detail?id=" + restaurantId + "&err=login";
+     *     if (!reviewService.updateReview(reviewId, me, rating, comment))
+     *         return "redirect:/restaurant-detail?id=" + restaurantId + "&err=forbidden";
+     *     return "redirect:/restaurant-detail?id=" + restaurantId;
+     * }
+     */
 }
