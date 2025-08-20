@@ -703,4 +703,63 @@ public class RestaurantService {
                 isFav, uploaderName, status, rejectReason
         );
     }
+    @Transactional(readOnly = true)
+    public ReviewDto getReviewDtoById(Long reviewId) {
+        return reviewRepository.findById(reviewId)
+                .map(rv -> new ReviewDto(
+                        rv.getId(),
+                        rv.getMemberId() == null ? null : rv.getMemberId().longValue(),
+                        getUploaderNickname(rv.getMemberId()),
+                        rv.getRating(),
+                        rv.getComment(),
+                        rv.getCreatedTime(),
+                        Boolean.TRUE.equals(rv.getIsHidden())   // 注意：這裡用的是 entity 的 getIsHidden()
+                ))
+                .orElse(null);
+    }
+ // === 讓「觀看者」也能看到隱藏留言，但非作者/非管理員只看到遮蔽文字 ===
+    @Transactional(readOnly = true)
+    public Page<ReviewDto> getReviewPageForViewer(
+            Long restaurantId,
+            int page, int size,
+            String sortBy, String order,
+            Long viewerId, boolean isAdmin) {
+
+        if (page < 0) page = 0;
+        if (size <= 0 || size > 100) size = 10;
+
+        String sortProp;
+        if ("rating".equalsIgnoreCase(sortBy)) sortProp = "rating";
+        else if ("id".equalsIgnoreCase(sortBy)) sortProp = "id";
+        else sortProp = "createdTime";
+
+        Sort.Direction dir = "asc".equalsIgnoreCase(order) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pr = PageRequest.of(page, size, Sort.by(dir, sortProp));
+
+        // 重要：一律抓「全部」(包含隱藏)，再依觀看者權限決定是否遮蔽內容
+        Page<RestaurantReview> raw = reviewRepository.findByRestaurantId(restaurantId, pr);
+
+        return raw.map(rv -> {
+            boolean hidden = Boolean.TRUE.equals(rv.getIsHidden());
+            Long authorId = (rv.getMemberId() == null) ? null : rv.getMemberId().longValue();
+
+            boolean canSeeRealContent = isAdmin ||
+                    (viewerId != null && authorId != null && viewerId.longValue() == authorId.longValue());
+
+            String commentForViewer = (hidden && !canSeeRealContent)
+                    ? "此則留言已被管理者隱藏"
+                    : rv.getComment();
+
+            return new ReviewDto(
+                    rv.getId(),
+                    authorId,
+                    getUploaderNickname(rv.getMemberId()),
+                    rv.getRating(),
+                    commentForViewer,
+                    rv.getCreatedTime(),
+                    hidden
+            );
+        });
+    }
+
 }

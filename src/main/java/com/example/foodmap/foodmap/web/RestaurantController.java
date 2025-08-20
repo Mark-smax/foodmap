@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.foodmap.foodmap.domain.RestaurantPhoto;
 import com.example.foodmap.foodmap.domain.RestaurantService;
+import com.example.foodmap.foodmap.domain.NotificationService;
 import com.example.foodmap.foodmap.dto.RestaurantDetailsDTO;
 import com.example.foodmap.foodmap.dto.RestaurantDto;
 import com.example.foodmap.foodmap.dto.ReviewCreateRequest;
@@ -29,9 +30,12 @@ import com.example.foodmap.member.domain.enums.MemberRole;
 public class RestaurantController {
 
     private final RestaurantService service;
+    private final NotificationService notificationService;
 
-    public RestaurantController(RestaurantService service) {
+    public RestaurantController(RestaurantService service,
+                                NotificationService notificationService) {
         this.service = service;
+        this.notificationService = notificationService;
     }
 
     /* ============================= 搜尋列表 ============================= */
@@ -120,6 +124,7 @@ public class RestaurantController {
     }
 
     /* ============================= 評論：查詢（預設不含隱藏） ============================= */
+    /* ============================= 評論：查詢（含隱藏，未授權者看遮蔽字） ============================= */
     @GetMapping("/{id}/reviews")
     public Page<ReviewDto> getReviews(
             @PathVariable("id") Long restaurantId,
@@ -127,11 +132,12 @@ public class RestaurantController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdTime") String sortBy,
             @RequestParam(defaultValue = "desc") String order,
-            @RequestParam(defaultValue = "false") boolean includeHidden,
             HttpSession session
     ) {
-        boolean canSeeHidden = includeHidden && isAdmin(session);
-        return service.getReviewPage(restaurantId, page, size, sortBy, order, canSeeHidden);
+        // 決定觀看者身份：作者/管理員可見內容，其他人看遮蔽字串
+        Long viewerId = currentMemberId(session);
+        boolean admin = isAdmin(session);
+        return service.getReviewPageForViewer(restaurantId, page, size, sortBy, order, viewerId, admin);
     }
 
     /* ============================= 評論：新增（JSON） ============================= */
@@ -267,6 +273,32 @@ public class RestaurantController {
                     .body(Map.of("error", "FORBIDDEN", "message", "只有管理員可以隱藏/取消隱藏評論"));
         }
         service.setReviewHidden(reviewId, hidden);
+        // 如需在隱藏後通知作者，可在 service 增加查作者的方法，然後呼叫 notificationService.notifyMemberReviewHidden(...)
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /* ============================= 評論：檢舉（會通知管理員） ============================= */
+    public static class ReportReq {
+        public Long memberId;   // 檢舉者（可省略，則由 session 取）
+        public String reason;   // 檢舉理由（可為 null/空）
+    }
+
+    @PostMapping("/{id}/reviews/{reviewId}/report")
+    public ResponseEntity<?> reportReview(
+            @PathVariable("id") Long restaurantId,
+            @PathVariable Long reviewId,
+            @RequestBody(required = false) ReportReq body,
+            HttpSession session
+    ) {
+        Long reporterId = (body != null && body.memberId != null)
+                ? body.memberId
+                : currentMemberId(session);
+        String reason = (body == null) ? null : body.reason;
+
+        // ✅ 發通知給所有管理員：連結直接指向餐廳詳情頁，並帶 reviewId
+        notificationService.notifyAdminsReviewReported(restaurantId, reviewId, reporterId, reason);
+
+        // 被檢舉者先不通知；等管理員真的隱藏時再通知
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
@@ -286,5 +318,28 @@ public class RestaurantController {
         }
         String roles = rolesObj == null ? "" : rolesObj.toString();
         return roles.contains("ADMIN") || roles.contains("管理員");
+    }
+    @GetMapping("/{id}/reviews/{reviewId}")
+    public ResponseEntity<?> getOneReview(
+            @PathVariable("id") Long restaurantId,
+            @PathVariable Long reviewId,
+            HttpSession session
+    ) {
+        // 確保餐廳存在（避免亂 ID）
+        service.getRestaurantById(restaurantId);
+
+        ReviewDto dto = service.getReviewDtoById(reviewId);
+        if (dto == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "NOT_FOUND", "message", "找不到這則評論"));
+        }
+
+        // 你的 DTO 欄位是 isHidden ⇒ 用 getIsHidden()
+        boolean hidden = Boolean.TRUE.equals(dto.isHidden());
+        if (hidden && !isAdmin(session)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "FORBIDDEN", "message", "沒有權限檢視此評論"));
+        }
+        return ResponseEntity.ok(dto);
     }
 }
